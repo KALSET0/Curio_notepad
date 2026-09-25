@@ -24,19 +24,32 @@ fun CurioNavHost() {
     NavHost(
         navController = navController,
         startDestination = CurioRoute.Splash,
-        // Short, calm transitions everywhere: slight horizontal drift + fade.
+        // Modern lateral motion: incoming screen slides the full width while
+        // the outgoing one drifts a third and fades (parallax both ways).
         enterTransition = {
-            fadeIn(animationSpec = tween(250)) +
-                slideInHorizontally(animationSpec = tween(250)) { it / 8 }
+            fadeIn(animationSpec = tween(300)) +
+                slideInHorizontally(animationSpec = tween(300)) { it }
         },
-        exitTransition = { fadeOut(animationSpec = tween(200)) },
-        popEnterTransition = { fadeIn(animationSpec = tween(250)) },
+        exitTransition = {
+            fadeOut(animationSpec = tween(300)) +
+                slideOutHorizontally(animationSpec = tween(300)) { -it / 3 }
+        },
+        popEnterTransition = {
+            fadeIn(animationSpec = tween(300)) +
+                slideInHorizontally(animationSpec = tween(300)) { -it / 3 }
+        },
         popExitTransition = {
-            fadeOut(animationSpec = tween(200)) +
-                slideOutHorizontally(animationSpec = tween(250)) { it / 8 }
+            fadeOut(animationSpec = tween(300)) +
+                slideOutHorizontally(animationSpec = tween(300)) { it }
         }
     ) {
-        composable<CurioRoute.Splash> {
+        composable<CurioRoute.Splash>(
+            // Branding hands over with a calm fade, no slide.
+            enterTransition = { fadeIn(animationSpec = tween(200)) },
+            exitTransition = { fadeOut(animationSpec = tween(300)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(200)) },
+            popExitTransition = { fadeOut(animationSpec = tween(300)) }
+        ) {
             SplashScreen(
                 onDone = {
                     navController.navigate(CurioRoute.Home) {
