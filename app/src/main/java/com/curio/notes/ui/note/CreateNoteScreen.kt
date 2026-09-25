@@ -22,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -47,6 +45,7 @@ import com.curio.notes.R
 import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.components.CurioPrimaryButton
 import com.curio.notes.ui.components.ErrorText
+import com.curio.notes.ui.components.borderlessFieldColors
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.rememberAppContainer
 
@@ -181,12 +180,3 @@ fun CreateNoteScreen(
         }
     }
 }
-
-@Composable
-private fun borderlessFieldColors() = TextFieldDefaults.colors(
-    focusedContainerColor = Color.Transparent,
-    unfocusedContainerColor = Color.Transparent,
-    disabledContainerColor = Color.Transparent,
-    focusedIndicatorColor = Color.Transparent,
-    unfocusedIndicatorColor = Color.Transparent
-)
