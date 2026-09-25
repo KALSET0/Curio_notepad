@@ -1,13 +1,20 @@
 package com.curio.notes.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -22,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.curio.notes.R
@@ -67,10 +75,27 @@ fun NoteCard(
                 onLongClickLabel = stringResource(R.string.cd_select_note)
             )
     ) {
-        Column(
-            modifier = Modifier.padding(Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
-        ) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            if (note.status == NoteStatus.ANSWERED) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(Spacing.xs)
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = Spacing.lg,
+                                bottomStart = Spacing.lg
+                            )
+                        )
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
             Text(
                 text = note.title,
                 style = MaterialTheme.typography.titleMedium,
@@ -132,6 +157,7 @@ fun NoteCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
             }
         }
     }

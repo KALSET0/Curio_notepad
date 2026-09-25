@@ -11,13 +11,22 @@ val CurioTypography = Typography(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
         fontSize = 28.sp,
-        lineHeight = 34.sp
+        lineHeight = 34.sp,
+        letterSpacing = (-0.25).sp
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.25).sp
     ),
     headlineSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
-        lineHeight = 28.sp
+        lineHeight = 28.sp,
+        letterSpacing = 0.sp
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.Default,
