@@ -7,6 +7,7 @@ import com.curio.notes.ai.AIProvider
 import com.curio.notes.ai.SwitchingAIProvider
 import com.curio.notes.ai.providers.GeminiAIProvider
 import com.curio.notes.ai.providers.MockAIProvider
+import com.curio.notes.ai.providers.OllamaAIProvider
 import com.curio.notes.ai.providers.OpenRouterAIProvider
 import com.curio.notes.ai.search.TavilyWebSearch
 import com.curio.notes.data.local.database.CurioDatabase
@@ -58,11 +59,30 @@ class AppContainer(context: Context) {
     // safe default; Gemini needs GEMINI_API_KEY in local.properties.
     // Web search (Tavily) is opt-in per note/conversation turn: the providers
     // ask the gatekeeper first, and only search when it says so.
-    val aiProvider: AIProvider by lazy {
-        val webSearch = TavilyWebSearch(
+    // Ollama talks to the user's laptop on the local network (Developer options).
+    private val tavilySearch: TavilyWebSearch by lazy {
+        TavilyWebSearch(
             apiKey = BuildConfig.TAVILY_API_KEY,
             client = okHttpClient
         )
+    }
+
+    private val ollamaProvider: OllamaAIProvider by lazy {
+        OllamaAIProvider(
+            serverUrl = settingsRepository.observeOllamaUrl(),
+            modelName = settingsRepository.observeOllamaModel(),
+            client = okHttpClient,
+            language = settingsRepository.observeLanguage(),
+            webSearch = tavilySearch,
+            webSearchEnabled = settingsRepository.observeWebSearch()
+        )
+    }
+
+    val testOllamaConnection: suspend () -> Boolean = {
+        ollamaProvider.testConnection()
+    }
+
+    val aiProvider: AIProvider by lazy {
         val searchEnabled = settingsRepository.observeWebSearch()
         SwitchingAIProvider(
             settingsRepository = settingsRepository,
@@ -75,16 +95,17 @@ class AppContainer(context: Context) {
                 apiKey = BuildConfig.GEMINI_API_KEY,
                 client = okHttpClient,
                 language = settingsRepository.observeLanguage(),
-                webSearch = webSearch,
+                webSearch = tavilySearch,
                 webSearchEnabled = searchEnabled
             ),
             openRouter = OpenRouterAIProvider(
                 apiKey = BuildConfig.OPENROUTER_API_KEY,
                 client = okHttpClient,
                 language = settingsRepository.observeLanguage(),
-                webSearch = webSearch,
+                webSearch = tavilySearch,
                 webSearchEnabled = searchEnabled
-            )
+            ),
+            ollama = ollamaProvider
         )
     }
 

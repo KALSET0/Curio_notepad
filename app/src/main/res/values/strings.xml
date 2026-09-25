@@ -91,6 +91,19 @@
     <string name="provider_openrouter_ok">Real AI answers. API key configured.</string>
     <string name="provider_openrouter_missing">Real AI answers. API key missing.</string>
     <string name="provider_openrouter_hint">Add OPENROUTER_API_KEY to local.properties (or the environment) and rebuild. Free keys at openrouter.ai/keys. Notes will show an error until then.</string>
+    <string name="provider_ollama">Local AI server</string>
+    <string name="provider_ollama_ok">Local answers. Server: %1$s</string>
+    <string name="provider_ollama_missing">Local answers. Server not set.</string>
+    <string name="provider_ollama_hint">Set the server URL in Developer options below.</string>
+    <string name="section_developer">Developer options</string>
+    <string name="dev_mode_title">Developer mode</string>
+    <string name="dev_mode_sub">Shows the local AI server and experimental settings.</string>
+    <string name="ollama_url_label">Server URL</string>
+    <string name="ollama_model_label">Model</string>
+    <string name="ollama_test">Test connection</string>
+    <string name="ollama_testing">Testing…</string>
+    <string name="ollama_test_ok">Server reachable</string>
+    <string name="ollama_test_failed">No answer. Check the URL, the Wi-Fi and the firewall.</string>
     <string name="section_appearance">Appearance</string>
     <string name="theme_system">System</string>
     <string name="theme_system_sub">Follow the device setting.</string>
@@ -148,6 +161,7 @@
     <string name="error_update_failed">Couldn\'t update the selected notes. Try again.</string>
     <string name="error_conversation_failed">Couldn\'t continue the conversation. Your notes are safe — retry to try again.</string>
     <string name="error_search_failed">The AI couldn\'t search the web. Check TAVILY_API_KEY in local.properties (or the environment) and rebuild.</string>
+    <string name="error_ollama_not_configured">The local AI server isn\'t configured. Set its URL in Settings → Developer options.</string>
     <string name="cd_copy">Copy</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="cd_share">Share</string>

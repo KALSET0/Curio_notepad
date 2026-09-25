@@ -12,10 +12,14 @@ class SwitchingAIProvider(
     scope: CoroutineScope,
     private val mock: AIProvider,
     private val gemini: AIProvider,
-    private val openRouter: AIProvider
+    private val openRouter: AIProvider,
+    private val ollama: AIProvider
 ) : AIProvider {
     private val choice: StateFlow<AiProviderChoice> = settingsRepository.observeAiProvider()
         .stateIn(scope, SharingStarted.Eagerly, AiProviderChoice.MOCK)
+
+    private val developerMode: StateFlow<Boolean> = settingsRepository.observeDeveloperMode()
+        .stateIn(scope, SharingStarted.Eagerly, false)
 
     override suspend fun classifyAndAnswer(input: String): AIResponse =
         current().classifyAndAnswer(input)
@@ -30,5 +34,8 @@ class SwitchingAIProvider(
         AiProviderChoice.MOCK -> mock
         AiProviderChoice.GEMINI -> gemini
         AiProviderChoice.OPENROUTER -> openRouter
+        // The local server hides with developer mode: selecting it while
+        // hidden (or after switching off) safely falls back to Mock.
+        AiProviderChoice.OLLAMA -> if (developerMode.value) ollama else mock
     }
 }

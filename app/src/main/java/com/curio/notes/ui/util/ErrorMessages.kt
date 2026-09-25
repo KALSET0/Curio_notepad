@@ -18,6 +18,7 @@ fun errorMessageFor(code: String): String = when (code) {
     "delete_failed" -> stringResource(R.string.error_delete_failed)
     "conversation_failed" -> stringResource(R.string.error_conversation_failed)
     "search_failed" -> stringResource(R.string.error_search_failed)
+    "ollama_not_configured" -> stringResource(R.string.error_ollama_not_configured)
     "unknown" -> stringResource(R.string.error_unknown)
     else -> code
 }

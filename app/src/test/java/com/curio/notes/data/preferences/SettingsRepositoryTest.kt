@@ -25,6 +25,9 @@ class SettingsRepositoryTest {
         assertEquals(AiProviderChoice.MOCK, repository.observeAiProvider().first())
         assertEquals(AppLanguage.SYSTEM, repository.observeLanguage().first())
         assertEquals(false, repository.observeWebSearch().first())
+        assertEquals("", repository.observeOllamaUrl().first())
+        assertEquals("", repository.observeOllamaModel().first())
+        assertEquals(false, repository.observeDeveloperMode().first())
     }
 
     @Test
@@ -35,11 +38,17 @@ class SettingsRepositoryTest {
         repository.setAiProvider(AiProviderChoice.GEMINI)
         repository.setLanguage(AppLanguage.SPANISH)
         repository.setWebSearchEnabled(true)
+        repository.setOllamaUrl("http://192.168.1.5:11434")
+        repository.setOllamaModel("qwen3:8b")
+        repository.setDeveloperMode(true)
 
         assertEquals(AppTheme.DARK, repository.observeTheme().first())
         assertEquals(AiProviderChoice.GEMINI, repository.observeAiProvider().first())
         assertEquals(AppLanguage.SPANISH, repository.observeLanguage().first())
         assertEquals(true, repository.observeWebSearch().first())
+        assertEquals("http://192.168.1.5:11434", repository.observeOllamaUrl().first())
+        assertEquals("qwen3:8b", repository.observeOllamaModel().first())
+        assertEquals(true, repository.observeDeveloperMode().first())
     }
 
     @Test

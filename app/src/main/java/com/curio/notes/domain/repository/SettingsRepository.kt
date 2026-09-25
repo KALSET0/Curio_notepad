@@ -14,4 +14,10 @@ interface SettingsRepository {
     suspend fun setLanguage(language: AppLanguage)
     fun observeWebSearch(): Flow<Boolean>
     suspend fun setWebSearchEnabled(enabled: Boolean)
+    fun observeOllamaUrl(): Flow<String>
+    suspend fun setOllamaUrl(url: String)
+    fun observeOllamaModel(): Flow<String>
+    suspend fun setOllamaModel(model: String)
+    fun observeDeveloperMode(): Flow<Boolean>
+    suspend fun setDeveloperMode(enabled: Boolean)
 }

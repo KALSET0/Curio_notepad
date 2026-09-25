@@ -47,4 +47,12 @@ sealed class AiException(val code: String, message: String, cause: Throwable? = 
         "Web search is not available. " +
             "Add TAVILY_API_KEY to local.properties (or the environment) and rebuild."
     )
+
+    // Local AI (Ollama): server URL missing. The laptop server must be
+    // configured in Developer options before this provider can run.
+    class OllamaNotConfigured : AiException(
+        "ollama_not_configured",
+        "The local AI server is not configured. " +
+            "Set its URL in Settings → Developer options."
+    )
 }

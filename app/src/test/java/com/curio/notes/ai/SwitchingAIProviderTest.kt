@@ -27,7 +27,8 @@ class SwitchingAIProviderTest {
                 scope = scope,
                 mock = RecordingProvider("mock"),
                 gemini = RecordingProvider("gemini"),
-                openRouter = RecordingProvider("openrouter")
+                openRouter = RecordingProvider("openrouter"),
+                ollama = RecordingProvider("ollama")
             )
 
             assertEquals("mock: hi", router.classifyAndAnswer("hi").title)
@@ -41,6 +42,32 @@ class SwitchingAIProviderTest {
             settings.emit(AiProviderChoice.OPENROUTER)
 
             assertEquals("openrouter: hi", router.classifyAndAnswer("hi").title)
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun `ollama routes only in developer mode`() = runTest {
+        val settings = FakeSettingsRepository()
+        val scope = CoroutineScope(UnconfinedTestDispatcher())
+        try {
+            val router = SwitchingAIProvider(
+                settingsRepository = settings,
+                scope = scope,
+                mock = RecordingProvider("mock"),
+                gemini = RecordingProvider("gemini"),
+                openRouter = RecordingProvider("openrouter"),
+                ollama = RecordingProvider("ollama")
+            )
+
+            settings.emit(AiProviderChoice.OLLAMA)
+
+            assertEquals("mock: hi", router.classifyAndAnswer("hi").title)
+
+            settings.setDeveloperMode(true)
+
+            assertEquals("ollama: hi", router.classifyAndAnswer("hi").title)
         } finally {
             scope.cancel()
         }
@@ -62,6 +89,9 @@ class SwitchingAIProviderTest {
         private val provider = MutableStateFlow(AiProviderChoice.MOCK)
         private val language = MutableStateFlow(AppLanguage.SYSTEM)
         private val webSearch = MutableStateFlow(false)
+        private val ollamaUrl = MutableStateFlow("")
+        private val ollamaModel = MutableStateFlow("")
+        private val developerMode = MutableStateFlow(false)
 
         fun emit(choice: AiProviderChoice) {
             provider.value = choice
@@ -89,6 +119,24 @@ class SwitchingAIProviderTest {
 
         override suspend fun setWebSearchEnabled(enabled: Boolean) {
             webSearch.value = enabled
+        }
+
+        override fun observeOllamaUrl() = ollamaUrl
+
+        override suspend fun setOllamaUrl(url: String) {
+            ollamaUrl.value = url
+        }
+
+        override fun observeOllamaModel() = ollamaModel
+
+        override suspend fun setOllamaModel(model: String) {
+            ollamaModel.value = model
+        }
+
+        override fun observeDeveloperMode() = developerMode
+
+        override suspend fun setDeveloperMode(enabled: Boolean) {
+            developerMode.value = enabled
         }
     }
 }

@@ -91,6 +91,19 @@
     <string name="provider_openrouter_ok">Respuestas reales. Clave configurada.</string>
     <string name="provider_openrouter_missing">Respuestas reales. Falta la clave.</string>
     <string name="provider_openrouter_hint">Agrega OPENROUTER_API_KEY a local.properties (o al entorno) y recompila. Claves gratuitas en openrouter.ai/keys. Las notas mostrarán un error hasta entonces.</string>
+    <string name="provider_ollama">Servidor de IA local</string>
+    <string name="provider_ollama_ok">Respuestas locales. Servidor: %1$s</string>
+    <string name="provider_ollama_missing">Respuestas locales. Servidor sin configurar.</string>
+    <string name="provider_ollama_hint">Pon la URL del servidor en Opciones de desarrollador.</string>
+    <string name="section_developer">Opciones de desarrollador</string>
+    <string name="dev_mode_title">Modo desarrollador</string>
+    <string name="dev_mode_sub">Muestra el servidor de IA local y ajustes experimentales.</string>
+    <string name="ollama_url_label">URL del servidor</string>
+    <string name="ollama_model_label">Modelo</string>
+    <string name="ollama_test">Probar conexión</string>
+    <string name="ollama_testing">Probando…</string>
+    <string name="ollama_test_ok">Servidor accesible</string>
+    <string name="ollama_test_failed">Sin respuesta. Revisa la URL, el Wi-Fi y el firewall.</string>
     <string name="section_appearance">Apariencia</string>
     <string name="theme_system">Sistema</string>
     <string name="theme_system_sub">Seguir el ajuste del dispositivo.</string>
@@ -148,6 +161,7 @@
     <string name="error_update_failed">No se pudieron actualizar las notas elegidas. Inténtalo de nuevo.</string>
     <string name="error_conversation_failed">No se pudo continuar la conversación. Tus notas están a salvo — reintenta.</string>
     <string name="error_search_failed">La IA no pudo buscar en la web. Revisa TAVILY_API_KEY en local.properties (o el entorno) y recompila.</string>
+    <string name="error_ollama_not_configured">El servidor de IA local no está configurado. Pon su URL en Ajustes → Opciones de desarrollador.</string>
     <string name="cd_copy">Copiar</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="cd_share">Compartir</string>

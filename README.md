@@ -180,6 +180,28 @@ TAVILY_API_KEY=       # free at https://tavily.com — only needed for web searc
 
 Empty means unconfigured — the app keeps working with Mock AI, and selecting a keyless provider shows a friendly error on notes instead of crashing. Keys must never be committed to the repository.
 
+### Local AI with Ollama (Developer options)
+
+The app can talk to Ollama running on your laptop over your own Wi-Fi (no internet involved, no key). The phone sends chat requests to `http://<laptop-ip>:11434`.
+
+**On the laptop:**
+
+1. Install Ollama from https://ollama.com and pull a model, e.g. `ollama pull qwen3:8b` (needs ~6 GB free RAM; otherwise try `qwen3:4b`).
+2. Serve on the LAN (by default Ollama only listens on localhost):
+   ```bash
+   OLLAMA_HOST=0.0.0.0 ollama serve
+   ```
+3. Allow Ollama through the firewall (port 11434) and join the same Wi-Fi as the phone.
+4. Find the laptop IP (`ipconfig` on Windows → IPv4, e.g. `192.168.1.10`).
+
+**In the app:**
+
+1. Settings → About → tap the version 5 times quickly to unlock Developer mode.
+2. A new **Developer options** section appears above About: enter the Server URL (`http://192.168.1.10:11434`) and the Model (`qwen3:8b`), then **Test connection**.
+3. Back in the AI provider section, pick **Local AI server**.
+
+Turning Developer mode off while Ollama is active safely falls back to Mock AI. Note: Qwen3 "thinking" traces (`<think>…</think>`) may leak into answers with some models — if you see them, open an issue and a stripper will be added.
+
 ---
 
 ## 🏗️ Technology Stack

@@ -19,6 +19,9 @@ private val THEME_KEY = stringPreferencesKey("app_theme")
 private val AI_PROVIDER_KEY = stringPreferencesKey("ai_provider")
 private val LANGUAGE_KEY = stringPreferencesKey("app_language")
 private val WEB_SEARCH_KEY = booleanPreferencesKey("web_search")
+private val OLLAMA_URL_KEY = stringPreferencesKey("ollama_url")
+private val OLLAMA_MODEL_KEY = stringPreferencesKey("ollama_model")
+private val DEVELOPER_MODE_KEY = booleanPreferencesKey("developer_mode")
 
 val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = SETTINGS_NAME)
 
@@ -61,5 +64,29 @@ class SettingsRepositoryImpl(
 
     override suspend fun setWebSearchEnabled(enabled: Boolean) {
         dataStore.edit { prefs -> prefs[WEB_SEARCH_KEY] = enabled }
+    }
+
+    override fun observeOllamaUrl(): Flow<String> = dataStore.data.map { prefs ->
+        prefs[OLLAMA_URL_KEY].orEmpty()
+    }
+
+    override suspend fun setOllamaUrl(url: String) {
+        dataStore.edit { prefs -> prefs[OLLAMA_URL_KEY] = url }
+    }
+
+    override fun observeOllamaModel(): Flow<String> = dataStore.data.map { prefs ->
+        prefs[OLLAMA_MODEL_KEY].orEmpty()
+    }
+
+    override suspend fun setOllamaModel(model: String) {
+        dataStore.edit { prefs -> prefs[OLLAMA_MODEL_KEY] = model }
+    }
+
+    override fun observeDeveloperMode(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[DEVELOPER_MODE_KEY] ?: false
+    }
+
+    override suspend fun setDeveloperMode(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[DEVELOPER_MODE_KEY] = enabled }
     }
 }
