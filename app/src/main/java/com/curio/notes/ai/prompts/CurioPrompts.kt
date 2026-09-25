@@ -1,6 +1,8 @@
 package com.curio.notes.ai.prompts
 
 import com.curio.notes.ai.AiLanguage
+import com.curio.notes.ai.ChatMessage
+import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
 import com.curio.notes.ai.search.WebResult
 
@@ -68,6 +70,66 @@ object CurioPrompts {
         AiLanguage.SPANISH -> GATEKEEPER_SYSTEM_ES
     }
 
+    fun followUpRefreshSystemFor(language: AiLanguage = AiLanguage.ENGLISH): String =
+        when (language) {
+            AiLanguage.ENGLISH -> FOLLOW_UP_REFRESH_SYSTEM_EN
+            AiLanguage.SPANISH -> FOLLOW_UP_REFRESH_SYSTEM_ES
+        }
+
+    fun followUpRefreshPromptFor(
+        context: ConversationContext,
+        history: List<ChatMessage>,
+        existing: List<String>,
+        language: AiLanguage = AiLanguage.ENGLISH
+    ): String = buildString {
+        val spanish = language == AiLanguage.SPANISH
+        if (spanish) {
+            appendLine("Idea capturada y contexto:")
+        } else {
+            appendLine("Captured thought and context:")
+        }
+        append(contextBlockFor(context, language))
+        val recent = history.takeLast(6)
+        if (recent.isEmpty()) {
+            appendLine(
+                if (spanish) {
+                    "Aún no hay conversación."
+                } else {
+                    "No conversation yet."
+                }
+            )
+        } else {
+            appendLine(
+                if (spanish) {
+                    "Conversación reciente:"
+                } else {
+                    "Recent conversation:"
+                }
+            )
+            recent.forEach { message ->
+                val who = if (message.role == ChatRole.USER) "USER" else "ASSISTANT"
+                appendLine("$who: ${message.text}")
+            }
+        }
+        if (existing.isNotEmpty()) {
+            appendLine(
+                if (spanish) {
+                    "Ya propuestas (no las repitas):"
+                } else {
+                    "Already proposed (do not repeat):"
+                }
+            )
+            existing.forEach { appendLine("- $it") }
+        }
+        append(
+            if (spanish) {
+                "Propón tres preguntas de seguimiento frescas como {\"questions\": [...]}."
+            } else {
+                "Propose three fresh follow-up questions as {\"questions\": [...]}."
+            }
+        )
+    }
+
     fun gatekeeperPromptFor(
         input: String,
         language: AiLanguage = AiLanguage.ENGLISH
@@ -131,7 +193,7 @@ object CurioPrompts {
         }
     }
 
-    private fun contextBlockFor(
+    internal fun contextBlockFor(
         context: ConversationContext,
         language: AiLanguage
     ): String = buildString {
@@ -440,5 +502,27 @@ de código, sin comentarios. Usa exactamente estas claves: "need_search", "query
 "query" es una búsqueda web corta y autocontenida en el idioma del usuario
 (palabras clave con contexto, no una frase completa); cadena vacía cuando no
 se necesita buscar.
+""".trimIndent()
+
+    private val FOLLOW_UP_REFRESH_SYSTEM_EN = """
+You propose follow-up questions for Curio, a personal curiosity companion.
+Given the captured thought, its context, and the recent conversation,
+propose exactly three follow-up questions the user would plausibly ask
+next — their likely doubts, phrased as the user's own questions.
+Do not repeat the already-proposed questions listed in the request, if any.
+
+Output exactly one JSON object and nothing else: {"questions": [...]}.
+Three short strings, no markdown, no commentary.
+""".trimIndent()
+
+    private val FOLLOW_UP_REFRESH_SYSTEM_ES = """
+Propones preguntas de seguimiento para Curio, un compañero personal de curiosidad.
+Dadas la idea capturada, su contexto y la conversación reciente, propone
+exactamente tres preguntas de seguimiento que el usuario plausiblemente
+haría después — sus dudas probables, redactadas como preguntas del propio usuario.
+No repitas las preguntas ya propuestas que aparecen en la petición, si las hay.
+
+Devuelve exactamente un objeto JSON y nada más: {"questions": [...]}.
+Tres cadenas cortas, sin markdown, sin comentarios.
 """.trimIndent()
 }

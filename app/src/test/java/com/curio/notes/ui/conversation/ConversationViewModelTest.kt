@@ -247,6 +247,47 @@ class ConversationViewModelTest {
         assertEquals(1, fake.calls)
     }
 
+    @Test
+    fun `regenerateSuggestions updates flow`() = runTest {
+        val repository = FakeNoteRepository()
+        val id = repository.createNote("Title", "Define photosynthesis")
+        val fake = FakeConversationAI()
+        val viewModel = ConversationViewModel(repository, fake, id)
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.suggestedQuestions.collect {} }
+        backgroundScope.launch { viewModel.isGeneratingSuggestions.collect {} }
+        advanceUntilIdle()
+
+        viewModel.regenerateSuggestions()
+        advanceUntilIdle()
+
+        assertEquals(listOf("Fresh follow-up?"), viewModel.suggestedQuestions.value)
+        assertNull(viewModel.suggestionsError.value)
+        assertEquals(false, viewModel.isGeneratingSuggestions.value)
+        assertEquals(1, fake.calls)
+    }
+
+    @Test
+    fun `regenerate failure keeps old and sets error`() = runTest {
+        val repository = FakeNoteRepository()
+        val id = repository.createNote("Title", "Define photosynthesis")
+        val fake = FakeConversationAI()
+        val viewModel = ConversationViewModel(repository, fake, id)
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.suggestedQuestions.collect {} }
+        advanceUntilIdle()
+
+        viewModel.regenerateSuggestions()
+        advanceUntilIdle()
+        fake.failure = IOException("boom")
+        viewModel.regenerateSuggestions()
+        advanceUntilIdle()
+
+        assertEquals(listOf("Fresh follow-up?"), viewModel.suggestedQuestions.value)
+        assertTrue(viewModel.suggestionsError.value?.isNotBlank() == true)
+        assertEquals(false, viewModel.isGeneratingSuggestions.value)
+    }
+
     private class FakeConversationAI(
         var failure: IOException? = null,
         var calls: Int = 0,
@@ -264,6 +305,15 @@ class ConversationViewModelTest {
             lastHistory = history
             failure?.let { throw it }
             return "Reply to: $input"
+        }
+
+        override suspend fun suggestFollowUps(
+            context: ConversationContext,
+            history: List<ChatMessage>
+        ): List<String> {
+            calls++
+            failure?.let { throw it }
+            return listOf("Fresh follow-up?")
         }
     }
 }

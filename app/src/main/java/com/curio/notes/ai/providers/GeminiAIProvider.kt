@@ -8,6 +8,7 @@ import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
+import com.curio.notes.ai.parseFollowUpList
 import com.curio.notes.ai.prompts.CurioPrompts
 import com.curio.notes.ai.search.GatekeeperDecision
 import com.curio.notes.ai.search.TavilyConfig
@@ -150,6 +151,65 @@ class GeminiAIProvider(
             )
         )
         return postText(body)
+    }
+
+    override suspend fun suggestFollowUps(
+        context: ConversationContext,
+        history: List<ChatMessage>
+    ): List<String> {
+        if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        val aiLanguage = language.first().toAiLanguage()
+        val body = AiJson.encodeToString(
+            GeminiRequest(
+                systemInstruction = GeminiContent(
+                    parts = listOf(
+                        GeminiPart(CurioPrompts.followUpRefreshSystemFor(aiLanguage))
+                    )
+                ),
+                contents = listOf(
+                    GeminiContent(
+                        role = "user",
+                        parts = listOf(
+                            GeminiPart(
+                                CurioPrompts.followUpRefreshPromptFor(
+                                    context,
+                                    history,
+                                    context.followUpQuestions,
+                                    aiLanguage
+                                )
+                            )
+                        )
+                    )
+                ),
+                generationConfig = GeminiGenerationConfig(
+                    responseMimeType = "application/json",
+                    responseSchema = followUpSchema(),
+                    temperature = 0.8,
+                    maxOutputTokens = 256
+                )
+            )
+        )
+        return parseFollowUpList(postText(body))
+    }
+
+    private fun followUpSchema(): JsonObject = buildJsonObject {
+        put("type", "OBJECT")
+        put(
+            "properties",
+            buildJsonObject {
+                put(
+                    "questions",
+                    buildJsonObject {
+                        put("type", "ARRAY")
+                        put("items", buildJsonObject { put("type", "STRING") })
+                    }
+                )
+            }
+        )
+        put(
+            "required",
+            buildJsonArray { add("questions") }
+        )
     }
 
     private suspend fun postText(body: String): String {

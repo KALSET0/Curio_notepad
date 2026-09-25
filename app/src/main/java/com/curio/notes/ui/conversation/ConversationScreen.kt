@@ -8,7 +8,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,6 +39,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,6 +58,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -113,13 +118,22 @@ fun ConversationScreen(
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val language = appAiLanguage()
-    val questions = aiResponse?.followUpQuestions.orEmpty()
+    val suggestedQuestions by viewModel.suggestedQuestions.collectAsStateWithLifecycle()
+    val isGeneratingSuggestions by viewModel.isGeneratingSuggestions.collectAsStateWithLifecycle()
+    val suggestionsError by viewModel.suggestionsError.collectAsStateWithLifecycle()
+    val storedQuestions = aiResponse?.followUpQuestions.orEmpty()
+    val displayedQuestions = suggestedQuestions.ifEmpty { storedQuestions }
 
     // While editing, system back cancels the edit instead of leaving.
     BackHandler(enabled = editingIndex != null) {
         draft = savedDraft
         savedDraft = ""
         editingIndex = null
+    }
+    // Registered after the editing handler so an open panel wins: first
+    // back closes the panel, the next one cancels the edit or leaves.
+    BackHandler(enabled = suggestionsOpen) {
+        suggestionsOpen = false
     }
 
     LaunchedEffect(messages.size) {
@@ -236,7 +250,7 @@ fun ConversationScreen(
                         }
                     }
                 }
-                if (questions.isEmpty() && messages.isEmpty() && !isSending) {
+                if (displayedQuestions.isEmpty() && messages.isEmpty() && !isSending) {
                     Text(
                         text = stringResource(R.string.conv_empty_hint),
                         style = MaterialTheme.typography.bodySmall,
@@ -283,7 +297,7 @@ fun ConversationScreen(
                         modifier = Modifier.weight(1f)
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        if (questions.isNotEmpty() && !isSending) {
+                        if (displayedQuestions.isNotEmpty() && !isSending) {
                             IconButton(onClick = { suggestionsOpen = !suggestionsOpen }) {
                                 Icon(
                                     Icons.Default.QuestionMark,
@@ -315,6 +329,17 @@ fun ConversationScreen(
                     }
                 }
             }
+            if (suggestionsOpen) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = { suggestionsOpen = false }
+                        )
+                )
+            }
             AnimatedVisibility(
                 visible = suggestionsOpen,
                 enter = slideInHorizontally { it } + fadeIn(),
@@ -322,7 +347,10 @@ fun ConversationScreen(
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
                 SuggestionsPanel(
-                    questions = questions,
+                    questions = displayedQuestions,
+                    isGenerating = isGeneratingSuggestions,
+                    error = suggestionsError,
+                    onRegenerate = viewModel::regenerateSuggestions,
                     onSelect = {
                         viewModel.send(it)
                         suggestionsOpen = false
@@ -337,6 +365,9 @@ fun ConversationScreen(
 @Composable
 private fun SuggestionsPanel(
     questions: List<String>,
+    isGenerating: Boolean,
+    error: String?,
+    onRegenerate: () -> Unit,
     onSelect: (String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
@@ -354,19 +385,37 @@ private fun SuggestionsPanel(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
             ) {
                 Text(
                     text = stringResource(R.string.suggestions_title),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f)
                 )
+                if (isGenerating) {
+                    CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier
+                            .padding(Spacing.sm)
+                            .size(20.dp)
+                    )
+                } else {
+                    IconButton(onClick = onRegenerate) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.suggestions_regenerate)
+                        )
+                    }
+                }
                 IconButton(onClick = onClose) {
                     Icon(
                         Icons.Default.QuestionMark,
                         contentDescription = stringResource(R.string.suggestions_title)
                     )
                 }
+            }
+            error?.let { code ->
+                ErrorText(text = errorMessageFor(code))
             }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 items(questions) { question ->

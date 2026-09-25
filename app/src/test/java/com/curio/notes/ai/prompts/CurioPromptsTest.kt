@@ -1,6 +1,8 @@
 package com.curio.notes.ai.prompts
 
 import com.curio.notes.ai.AiLanguage
+import com.curio.notes.ai.ChatMessage
+import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
 import com.curio.notes.ai.search.WebResult
 import com.curio.notes.domain.model.NoteType
@@ -141,6 +143,39 @@ class CurioPromptsTest {
         val spanish = CurioPrompts.systemPromptFor(AiLanguage.SPANISH)
         assertTrue(spanish.contains("propio usuario"))
         assertTrue(spanish.contains("dudas probables"))
+    }
+
+    @Test
+    fun `refresh system demands fresh questions as json`() {
+        for (language in AiLanguage.entries) {
+            val system = CurioPrompts.followUpRefreshSystemFor(language)
+            assertTrue(system.contains("\"questions\""))
+            assertTrue(system.contains("JSON"))
+        }
+    }
+
+    @Test
+    fun `refresh prompt carries context history and exclusions`() {
+        val context = ConversationContext(
+            originalText = "Coffee",
+            type = NoteType.CLAIM,
+            summary = "Claimed.",
+            relatedTopics = listOf("T1"),
+            followUpQuestions = listOf("Old?")
+        )
+        val history = listOf(
+            ChatMessage(ChatRole.USER, "Hi?"),
+            ChatMessage(ChatRole.MODEL, "Hello.")
+        )
+        val prompt = CurioPrompts.followUpRefreshPromptFor(
+            context, history, listOf("Old?"), AiLanguage.ENGLISH
+        )
+
+        assertTrue(prompt.contains("Coffee"))
+        assertTrue(prompt.contains("USER: Hi?"))
+        assertTrue(prompt.contains("ASSISTANT: Hello."))
+        assertTrue(prompt.contains("Old?"))
+        assertTrue(prompt.contains("questions"))
     }
 
     @Test

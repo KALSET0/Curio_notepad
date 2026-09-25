@@ -8,6 +8,7 @@ import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
+import com.curio.notes.ai.parseFollowUpList
 import com.curio.notes.ai.prompts.CurioPrompts
 import com.curio.notes.ai.search.GatekeeperDecision
 import com.curio.notes.ai.search.TavilyConfig
@@ -249,6 +250,38 @@ class OllamaAIProvider(
         }
         if (content.isNullOrBlank()) throw AiException.InvalidResponse()
         return content
+    }
+
+    override suspend fun suggestFollowUps(
+        context: ConversationContext,
+        history: List<ChatMessage>
+    ): List<String> {
+        val (url, model) = endpoint()
+        val aiLanguage = language.first().toAiLanguage()
+        val body = StrictJson.encodeToString(
+            OpenRouterChatRequest(
+                model = model,
+                messages = listOf(
+                    OpenRouterMessage(
+                        "system",
+                        CurioPrompts.followUpRefreshSystemFor(aiLanguage)
+                    ),
+                    OpenRouterMessage(
+                        "user",
+                        CurioPrompts.followUpRefreshPromptFor(
+                            context,
+                            history,
+                            context.followUpQuestions,
+                            aiLanguage
+                        )
+                    )
+                ),
+                temperature = 0.8,
+                maxTokens = 256,
+                responseFormat = OpenRouterResponseFormat("json_object")
+            )
+        )
+        return parseFollowUpList(stripThinkBlocks(extractContent(postText(url, body))))
     }
 
     private suspend fun postText(url: String, body: String): String {

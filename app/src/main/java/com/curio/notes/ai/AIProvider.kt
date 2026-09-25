@@ -8,4 +8,11 @@ interface AIProvider {
         history: List<ChatMessage>,
         input: String
     ): String
+
+    // Fresh follow-up question ideas for the current conversation state.
+    // Never throws structured-data guarantees: empty list means "keep old".
+    suspend fun suggestFollowUps(
+        context: ConversationContext,
+        history: List<ChatMessage>
+    ): List<String>
 }

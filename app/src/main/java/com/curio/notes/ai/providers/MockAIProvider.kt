@@ -56,6 +56,24 @@ class MockAIProvider(
             " (Mock also consulted 2 example web sources.)"
         }
     }
+
+    override suspend fun suggestFollowUps(
+        context: ConversationContext,
+        history: List<ChatMessage>
+    ): List<String> {
+        delay(800)
+        return if (language.first().toAiLanguage() == AiLanguage.SPANISH) {
+            listOf(
+                "Seguimiento simulado: ¿qué más quieres saber?",
+                "Seguimiento simulado: ¿qué harías con esto?"
+            )
+        } else {
+            listOf(
+                "Mock follow-up: what else do you want to know?",
+                "Mock follow-up: what would you do with this?"
+            )
+        }
+    }
 }
 
 internal fun mockNeedsSearch(input: String): Boolean {

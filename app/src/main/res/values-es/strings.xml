@@ -130,6 +130,7 @@
     <string name="conv_history_title">Conversación</string>
     <string name="menu_edit">Editar</string>
     <string name="suggestions_title">Preguntas de seguimiento</string>
+    <string name="suggestions_regenerate">Regenerar preguntas</string>
     <string name="conv_editing">Editar mensaje</string>
 
     <!-- AI response card -->

@@ -180,4 +180,20 @@ class MockAIProviderTest {
         assertTrue(first.contains("example web sources"))
         assertTrue(!second.contains("example web sources"))
     }
+
+    @Test
+    fun `suggestFollowUps returns localized canned questions`() = runTest {
+        val context = ConversationContext("Original", null, null)
+
+        val english = provider.suggestFollowUps(context, emptyList())
+        assertEquals(2, english.size)
+        assertTrue(english.all { it.contains("Mock") })
+
+        val spanish = MockAIProvider(
+            delayMillis = 0L,
+            language = flowOf(AppLanguage.SPANISH)
+        ).suggestFollowUps(context, emptyList())
+        assertEquals(2, spanish.size)
+        assertTrue(spanish.all { it.contains("simulado") })
+    }
 }

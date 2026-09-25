@@ -82,6 +82,11 @@ class SwitchingAIProviderTest {
             history: List<ChatMessage>,
             input: String
         ): String = "$tag-reply"
+
+        override suspend fun suggestFollowUps(
+            context: ConversationContext,
+            history: List<ChatMessage>
+        ): List<String> = listOf("$tag-follow-up")
     }
 
     private class FakeSettingsRepository : SettingsRepository {

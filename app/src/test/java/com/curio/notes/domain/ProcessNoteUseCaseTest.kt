@@ -182,6 +182,11 @@ class ProcessNoteUseCaseTest {
             history: List<ChatMessage>,
             input: String
         ): String = "fake reply to $input"
+
+        override suspend fun suggestFollowUps(
+            context: ConversationContext,
+            history: List<ChatMessage>
+        ): List<String> = listOf("fake follow-up")
     }
 
 }

@@ -54,6 +54,15 @@ class ConversationViewModel(
     val developerMode: StateFlow<Boolean> = (tracker?.developerMode ?: flowOf(false))
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    private val _suggestedQuestions = MutableStateFlow(emptyList<String>())
+    val suggestedQuestions: StateFlow<List<String>> = _suggestedQuestions
+
+    private val _isGeneratingSuggestions = MutableStateFlow(false)
+    val isGeneratingSuggestions: StateFlow<Boolean> = _isGeneratingSuggestions
+
+    private val _suggestionsError = MutableStateFlow<String?>(null)
+    val suggestionsError: StateFlow<String?> = _suggestionsError
+
     fun send(input: String) {
         val text = input.trim()
         if (text.isBlank() || _isSending.value) return
@@ -92,6 +101,31 @@ class ConversationViewModel(
 
     fun dismissError() {
         _error.value = null
+    }
+
+    // Asks the AI for fresh follow-up ideas with the current context.
+    // Session-only: the note's stored questions are never overwritten.
+    fun regenerateSuggestions() {
+        val context = buildContext() ?: return
+        if (_isGeneratingSuggestions.value || _isSending.value) return
+        _isGeneratingSuggestions.value = true
+        _suggestionsError.value = null
+        viewModelScope.launch {
+            try {
+                val fresh = aiProvider.suggestFollowUps(context, messages.value.takeLast(6))
+                if (fresh.isNotEmpty()) {
+                    _suggestedQuestions.value = fresh
+                } else {
+                    _suggestionsError.value = "invalid_response"
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _suggestionsError.value = (e as? AiException)?.code ?: "unknown"
+            } finally {
+                _isGeneratingSuggestions.value = false
+            }
+        }
     }
 
     private fun fetchReply(
@@ -143,7 +177,8 @@ class ConversationViewModel(
             originalText = current.originalText,
             type = current.type,
             summary = response?.summary,
-            relatedTopics = response?.relatedTopics.orEmpty()
+            relatedTopics = response?.relatedTopics.orEmpty(),
+            followUpQuestions = response?.followUpQuestions.orEmpty()
         )
     }
 

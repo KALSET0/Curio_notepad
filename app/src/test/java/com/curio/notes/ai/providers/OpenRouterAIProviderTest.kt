@@ -254,6 +254,29 @@ class OpenRouterAIProviderTest {
         assertTrue(body.contains("Chlorophyll"))
     }
 
+    @Test
+    fun `suggestFollowUps returns parsed questions`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope(
+                    AiJson.encodeToString(
+                        AiJson.encodeToString(mapOf("questions" to listOf("Q1?", "Q2?")))
+                    )
+                )
+            )
+        )
+
+        val questions = provider().suggestFollowUps(
+            ConversationContext("Original", null, null),
+            emptyList()
+        )
+
+        assertEquals(listOf("Q1?", "Q2?"), questions)
+        val recorded = server.takeRequest(5, TimeUnit.SECONDS)
+        assertNotNull(recorded)
+        assertTrue(recorded!!.body.readUtf8().contains("questions"))
+    }
+
     private suspend fun failsAs(expected: Class<out AiException>, block: suspend () -> Unit) {
         try {
             block()

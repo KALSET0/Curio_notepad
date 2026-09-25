@@ -30,6 +30,11 @@ class SwitchingAIProvider(
         input: String
     ): String = current().continueConversation(context, history, input)
 
+    override suspend fun suggestFollowUps(
+        context: ConversationContext,
+        history: List<ChatMessage>
+    ): List<String> = current().suggestFollowUps(context, history)
+
     private fun current(): AIProvider = when (choice.value) {
         AiProviderChoice.MOCK -> mock
         AiProviderChoice.GEMINI -> gemini
