@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +48,7 @@ import com.curio.notes.R
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.ui.components.DeleteDialog
+import com.curio.notes.ui.components.EmptyState
 import com.curio.notes.ui.components.NoteCard
 import com.curio.notes.ui.components.ShareButton
 import com.curio.notes.ui.components.appAiLanguage
@@ -178,12 +180,16 @@ fun HomeScreen(
         },
         floatingActionButton = {
             if (!selectionMode) {
-                FloatingActionButton(onClick = onCreateNote) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = stringResource(R.string.cd_create_note)
-                    )
-                }
+                ExtendedFloatingActionButton(
+                    onClick = onCreateNote,
+                    icon = {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null
+                        )
+                    },
+                    text = { Text(stringResource(R.string.fab_capture)) }
+                )
             }
         }
     ) { padding ->
@@ -192,23 +198,25 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            SingleChoiceSegmentedButtonRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                SegmentedButton(
-                    selected = !showArchived,
-                    onClick = { viewModel.setShowArchived(false) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                    label = { Text(stringResource(R.string.tab_inbox)) }
-                )
-                SegmentedButton(
-                    selected = showArchived,
-                    onClick = { viewModel.setShowArchived(true) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                    label = { Text(stringResource(R.string.tab_archived)) }
-                )
+            if (!selectionMode) {
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    SegmentedButton(
+                        selected = !showArchived,
+                        onClick = { viewModel.setShowArchived(false) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                        label = { Text(stringResource(R.string.tab_inbox)) }
+                    )
+                    SegmentedButton(
+                        selected = showArchived,
+                        onClick = { viewModel.setShowArchived(true) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        label = { Text(stringResource(R.string.tab_archived)) }
+                    )
+                }
             }
             selectionError?.let { code ->
                 ErrorText(
@@ -217,30 +225,17 @@ fun HomeScreen(
                 )
             }
             if (visibleNotes.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f)
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.tagline),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = stringResource(
-                            if (showArchived) {
-                                R.string.archived_empty_body
-                            } else {
-                                R.string.inbox_empty_body
-                            }
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
+                EmptyState(
+                    title = stringResource(R.string.tagline),
+                    body = stringResource(
+                        if (showArchived) {
+                            R.string.archived_empty_body
+                        } else {
+                            R.string.inbox_empty_body
+                        }
+                    ),
+                    modifier = Modifier.weight(1f)
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier

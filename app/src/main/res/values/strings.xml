@@ -9,6 +9,7 @@
     <string name="cd_search">Search</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_create_note">Create note</string>
+    <string name="fab_capture">Capture</string>
     <string name="inbox_empty_body">Your inbox is empty. Tap + to capture your first thought.</string>
     <string name="archived_empty_body">No archived thoughts. Long-press a note in the inbox to select it, then archive it.</string>
     <plurals name="inbox_thoughts">
