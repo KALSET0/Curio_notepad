@@ -69,6 +69,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -124,7 +125,8 @@ fun ConversationScreen(
     var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     var savedDraft by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
-    val context = LocalContext.current
+                val context = LocalContext.current
+                val view = LocalView.current
     val language = appAiLanguage()
     val suggestedQuestions by viewModel.suggestedQuestions.collectAsStateWithLifecycle()
     val isGeneratingSuggestions by viewModel.isGeneratingSuggestions.collectAsStateWithLifecycle()
@@ -422,6 +424,7 @@ fun ConversationScreen(
                             modifier = Modifier.weight(1f).onFocusChanged { focusState ->
                                 if (focusState.isFocused) {
                                     suggestionsOpen = false
+                                    view.requestApplyInsets()
                                 }
                             }
                         )

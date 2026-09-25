@@ -12,9 +12,12 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Curio">
+        <!-- adjustNothing: the window never resizes for the keyboard; the chat
+             composer tracks it with imePadding() only (no double offset). -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:windowSoftInputMode="adjustNothing"
             android:theme="@style/Theme.Curio.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
