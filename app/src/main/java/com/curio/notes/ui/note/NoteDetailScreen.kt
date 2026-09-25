@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -56,10 +58,13 @@ import com.curio.notes.ui.components.AiResponseCard
 import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.components.StatusChip
 import com.curio.notes.ui.components.TypeChip
+import com.curio.notes.ui.components.appAiLanguage
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.appLocale
+import com.curio.notes.ui.util.formatNoteExport
 import com.curio.notes.ui.util.formatTimestamp
 import com.curio.notes.ui.util.rememberAppContainer
+import com.curio.notes.ui.util.shareText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,6 +87,8 @@ fun NoteDetailScreen(
     val aiResponse by viewModel.aiResponse.collectAsStateWithLifecycle()
     val conversation by viewModel.conversation.collectAsStateWithLifecycle()
     val operationError by viewModel.operationError.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val language = appAiLanguage()
 
     Scaffold(
         topBar = {
@@ -92,6 +99,26 @@ fun NoteDetailScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cd_back)
+                        )
+                    }
+                },
+                actions = {
+                    val current = note
+                    IconButton(
+                        onClick = {
+                            current?.let {
+                                shareText(
+                                    context,
+                                    formatNoteExport(it, aiResponse, conversation, language),
+                                    context.getString(R.string.share_chooser_title)
+                                )
+                            }
+                        },
+                        enabled = current != null
+                    ) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = stringResource(R.string.cd_share)
                         )
                     }
                 }

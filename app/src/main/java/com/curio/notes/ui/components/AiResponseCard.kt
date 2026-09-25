@@ -178,9 +178,9 @@ fun AiResponseCard(response: AIResponse, modifier: Modifier = Modifier) {
     }
 }
 
-/** Matches the AI content language to the UI locale. */
+/** Matches the AI content language to the UI locale. Shared with export. */
 @Composable
-private fun appAiLanguage(): AiLanguage {
+fun appAiLanguage(): AiLanguage {
     val locale = LocalContext.current.resources.configuration.locales[0]
     return if (locale.language.startsWith("es")) AiLanguage.SPANISH else AiLanguage.ENGLISH
 }

@@ -3,12 +3,18 @@ package com.curio.notes.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.curio.notes.ai.parseAiResponse
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.repository.NoteRepository
+import com.curio.notes.ai.AiLanguage
+import com.curio.notes.ui.util.ExportedNote
+import com.curio.notes.ui.util.formatNotesExport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -63,6 +69,24 @@ class HomeViewModel(private val repository: NoteRepository) : ViewModel() {
 
     fun pinSelected() {
         bulkUpdate(action = { repository.setPinned(it, true) })
+    }
+
+    // Builds the markdown export for the current selection. Conversations
+    // load one-shot (no flows) since export is a point-in-time snapshot.
+    suspend fun exportSelected(language: AiLanguage): String {
+        val ids = _selectedIds.value
+        if (ids.isEmpty()) return ""
+        val all = notes.value + archivedNotes.value
+        val items = ids.mapNotNull { id ->
+            all.firstOrNull { it.id == id }?.let { note ->
+                ExportedNote(
+                    note = note,
+                    aiResponse = parseAiResponse(note.aiResponseJson),
+                    conversation = repository.observeConversation(id).first()
+                )
+            }
+        }
+        return formatNotesExport(items, language)
     }
 
     private fun bulkUpdate(action: suspend (Set<Long>) -> Unit, onDone: () -> Unit = {}) {

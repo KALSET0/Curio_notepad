@@ -143,4 +143,6 @@
     <string name="error_search_failed">La IA no pudo buscar en la web. Revisa TAVILY_API_KEY en local.properties (o el entorno) y recompila.</string>
     <string name="cd_copy">Copiar</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
+    <string name="cd_share">Compartir</string>
+    <string name="share_chooser_title">Compartir con IA</string>
 </resources>

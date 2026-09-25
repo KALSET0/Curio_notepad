@@ -143,4 +143,6 @@
     <string name="error_search_failed">The AI couldn\'t search the web. Check TAVILY_API_KEY in local.properties (or the environment) and rebuild.</string>
     <string name="cd_copy">Copy</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="cd_share">Share</string>
+    <string name="share_chooser_title">Share with AI</string>
 </resources>
