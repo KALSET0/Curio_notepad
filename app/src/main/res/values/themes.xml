@@ -3,4 +3,13 @@
     <style name="Theme.Curio" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <!-- System splash: instant branding while the app starts. The branded
+         Compose screen (Splash route) takes over right after. -->
+    <style name="Theme.Curio.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/curio_logo</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/Theme.Curio</item>
+    </style>
 </resources>

@@ -11,14 +11,24 @@ import com.curio.notes.ui.note.CreateNoteScreen
 import com.curio.notes.ui.note.NoteDetailScreen
 import com.curio.notes.ui.search.SearchScreen
 import com.curio.notes.ui.settings.SettingsScreen
+import com.curio.notes.ui.splash.SplashScreen
 
 @Composable
 fun CurioNavHost() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = CurioRoute.Home
+        startDestination = CurioRoute.Splash
     ) {
+        composable<CurioRoute.Splash> {
+            SplashScreen(
+                onDone = {
+                    navController.navigate(CurioRoute.Home) {
+                        popUpTo(CurioRoute.Splash) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable<CurioRoute.Home> {
             HomeScreen(
                 onCreateNote = { navController.navigate(CurioRoute.CreateNote) },

@@ -4,6 +4,9 @@ import kotlinx.serialization.Serializable
 
 sealed interface CurioRoute {
     @Serializable
+    data object Splash : CurioRoute
+
+    @Serializable
     data object Home : CurioRoute
 
     @Serializable
