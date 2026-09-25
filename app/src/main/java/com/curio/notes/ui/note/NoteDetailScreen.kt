@@ -50,6 +50,7 @@ import com.curio.notes.ai.AIResponse
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.ui.components.AiResponseCard
+import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.components.StatusChip
 import com.curio.notes.ui.components.TypeChip
 import com.curio.notes.ui.util.errorMessageFor
@@ -250,6 +251,11 @@ private fun NoteDetailContent(
             onValueChange = { body = it },
             label = { Text(stringResource(R.string.detail_original_label)) },
             minLines = 5,
+            trailingIcon = {
+                if (body.isNotBlank()) {
+                    CopyIconButton(text = body)
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
         operationError?.let { code ->

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
+import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.rememberAppContainer
 
@@ -107,6 +108,11 @@ fun CreateNoteScreen(
                     .weight(1f)
                     .padding(top = 12.dp)
                     .focusRequester(focusRequester),
+                trailingIcon = {
+                    if (body.isNotBlank()) {
+                        CopyIconButton(text = body)
+                    }
+                },
                 supportingText = {
                     Text(stringResource(R.string.create_supporting))
                 }

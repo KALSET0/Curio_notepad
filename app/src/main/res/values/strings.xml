@@ -131,4 +131,6 @@
     <string name="error_delete_failed">Couldn\'t delete this note. Try again.</string>
     <string name="error_update_failed">Couldn\'t update the selected notes. Try again.</string>
     <string name="error_conversation_failed">Couldn\'t continue the conversation. Your notes are safe — retry to try again.</string>
+    <string name="cd_copy">Copy</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
 </resources>

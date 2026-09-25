@@ -45,6 +45,7 @@ import com.curio.notes.R
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.domain.model.Note
+import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.rememberAppContainer
 
@@ -250,8 +251,12 @@ private fun MessageBubble(message: ChatMessage, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        if (isUser) {
+            CopyIconButton(text = message.text)
+        }
         Surface(
             color = if (isUser) scheme.primaryContainer else scheme.surfaceVariant,
             contentColor = if (isUser) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
@@ -263,6 +268,9 @@ private fun MessageBubble(message: ChatMessage, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
+        }
+        if (!isUser) {
+            CopyIconButton(text = message.text)
         }
     }
 }

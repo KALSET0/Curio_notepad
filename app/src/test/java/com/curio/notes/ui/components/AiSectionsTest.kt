@@ -87,4 +87,40 @@ class AiSectionsTest {
         assertTrue(first is AiSection.Paragraph)
         assertEquals("Definition", (first as AiSection.Paragraph).heading)
     }
+
+    @Test
+    fun `formatted response contains title and all parts`() {
+        val response = AIResponse(
+            type = NoteType.QUESTION,
+            title = "Quantum?",
+            summary = "Short answer.",
+            examples = listOf("ex"),
+            keyPoints = listOf("kp"),
+            relatedTopics = listOf("rt"),
+            followUpQuestions = listOf("fq")
+        )
+        val formatted = formatAiResponse(response)
+
+        assertTrue(formatted.contains("Quantum?"))
+        assertTrue(formatted.contains("Quick Answer"))
+        assertTrue(formatted.contains("• ex"))
+        assertTrue(formatted.contains("1. fq"))
+        assertTrue(formatted.contains("rt"))
+    }
+
+    @Test
+    fun `formatted response can exclude follow-up questions`() {
+        val response = AIResponse(
+            type = NoteType.QUESTION,
+            title = "Quantum?",
+            summary = "Short answer.",
+            followUpQuestions = listOf("fq")
+        )
+        val formatted = formatAiResponse(response, includeFollowUpQuestions = false)
+
+        assertTrue(formatted.contains("Quantum?"))
+        assertTrue(formatted.contains("Short answer."))
+        assertTrue(!formatted.contains("fq"))
+        assertTrue(!formatted.contains("Follow-up Questions"))
+    }
 }
