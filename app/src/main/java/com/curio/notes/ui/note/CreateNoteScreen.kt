@@ -14,7 +14,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
@@ -37,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.ui.components.CopyIconButton
+import com.curio.notes.ui.components.CurioPrimaryButton
 import com.curio.notes.ui.components.ErrorText
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.rememberAppContainer
@@ -80,23 +80,6 @@ fun CreateNoteScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cd_back)
-                        )
-                    }
-                },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            saving = true
-                            viewModel.saveNote(title, body, onBack)
-                        },
-                        enabled = body.isNotBlank() && !saving
-                    ) {
-                        Text(
-                            if (saving) {
-                                stringResource(R.string.action_saving)
-                            } else {
-                                stringResource(R.string.action_save)
-                            }
                         )
                     }
                 }
@@ -143,6 +126,18 @@ fun CreateNoteScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
+            CurioPrimaryButton(
+                text = if (saving) {
+                    stringResource(R.string.action_saving)
+                } else {
+                    stringResource(R.string.action_save)
+                },
+                onClick = {
+                    saving = true
+                    viewModel.saveNote(title, body, onBack)
+                },
+                enabled = body.isNotBlank() && !saving
+            )
         }
     }
 }

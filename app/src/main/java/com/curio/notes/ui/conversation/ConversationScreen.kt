@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -228,21 +227,17 @@ private fun ConversationSuggestions(
         )
         return
     }
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = Spacing.lg),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm)
     ) {
-        items(questions) { question ->
+        questions.forEach { question ->
             SuggestionChip(
                 onClick = { onSelect(question) },
-                label = {
-                    Text(
-                        text = question,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                label = { Text(text = question) },
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

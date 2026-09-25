@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.curio.notes.R
+import com.curio.notes.ui.theme.SecondaryDark
 import com.curio.notes.ui.util.rememberAppContainer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -98,7 +99,7 @@ fun SplashScreen(onDone: () -> Unit) {
             Text(
                 text = stringResource(R.string.tagline),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFFB3C5D6)
+                color = SecondaryDark
             )
         }
     }

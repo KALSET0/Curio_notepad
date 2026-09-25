@@ -3,6 +3,7 @@ package com.curio.notes.ui.search
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -120,36 +121,31 @@ fun SearchScreen(
                     .fillMaxWidth()
                     .focusRequester(focusRequester)
             )
-            // One compact filter strip: sort, types, and clear share a
-            // single horizontal scroll instead of two permanent rows.
+            // Sort on its own row; type filters scroll below it.
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                FilterChip(
+                    selected = sortOrder == NoteSortOrder.NEWEST_FIRST,
+                    onClick = { viewModel.setSortOrder(NoteSortOrder.NEWEST_FIRST) },
+                    label = { Text(stringResource(R.string.sort_newest)) }
+                )
+                FilterChip(
+                    selected = sortOrder == NoteSortOrder.OLDEST_FIRST,
+                    onClick = { viewModel.setSortOrder(NoteSortOrder.OLDEST_FIRST) },
+                    label = { Text(stringResource(R.string.sort_oldest)) }
+                )
+                if (filtersActive) {
+                    TextButton(onClick = viewModel::clearFilters) {
+                        Text(stringResource(R.string.filters_clear))
+                    }
+                }
+            }
             LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                item(key = "sort-newest") {
-                    FilterChip(
-                        selected = sortOrder == NoteSortOrder.NEWEST_FIRST,
-                        onClick = { viewModel.setSortOrder(NoteSortOrder.NEWEST_FIRST) },
-                        label = { Text(stringResource(R.string.sort_newest)) }
-                    )
-                }
-                item(key = "sort-oldest") {
-                    FilterChip(
-                        selected = sortOrder == NoteSortOrder.OLDEST_FIRST,
-                        onClick = { viewModel.setSortOrder(NoteSortOrder.OLDEST_FIRST) },
-                        label = { Text(stringResource(R.string.sort_oldest)) }
-                    )
-                }
                 items(NoteType.entries, key = { it.name }) { type ->
                     FilterChip(
                         selected = type in selectedTypes,
                         onClick = { viewModel.toggleTypeFilter(type) },
                         label = { Text(type.label()) }
                     )
-                }
-                if (filtersActive) {
-                    item(key = "filters-clear") {
-                        TextButton(onClick = viewModel::clearFilters) {
-                            Text(stringResource(R.string.filters_clear))
-                        }
-                    }
                 }
             }
             when {
