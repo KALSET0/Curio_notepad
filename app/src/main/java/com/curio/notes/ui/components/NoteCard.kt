@@ -95,7 +95,7 @@ fun NoteCard(
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(Spacing.lg)
                     )
-                    Text(
+                    MarkdownText(
                         text = preview,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

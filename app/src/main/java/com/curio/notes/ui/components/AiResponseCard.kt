@@ -198,7 +198,7 @@ private fun AiSectionContent(section: AiSection) {
                     heading = section.heading,
                     copyText = "${section.heading}\n${section.body}"
                 )
-                Text(text = section.body, style = MaterialTheme.typography.bodyLarge)
+                MarkdownText(text = section.body, style = MaterialTheme.typography.bodyLarge)
             }
         }
         is AiSection.Bullets -> {
@@ -213,7 +213,7 @@ private fun AiSectionContent(section: AiSection) {
                 section.items.forEach { item ->
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Text(text = "•", style = MaterialTheme.typography.bodyLarge)
-                        Text(
+                        MarkdownText(
                             text = item,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f)
@@ -267,7 +267,7 @@ private fun AiSectionContent(section: AiSection) {
                             text = "${index + 1}.",
                             style = MaterialTheme.typography.bodyLarge
                         )
-                        Text(
+                        MarkdownText(
                             text = question,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f)

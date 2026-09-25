@@ -58,6 +58,7 @@ import com.curio.notes.ai.ChatRole
 import com.curio.notes.domain.model.Note
 import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.components.ErrorText
+import com.curio.notes.ui.components.MarkdownText
 import com.curio.notes.ui.components.ShareButton
 import com.curio.notes.ui.components.appAiLanguage
 import com.curio.notes.ui.theme.Spacing
@@ -339,7 +340,7 @@ private fun MessageBubble(message: ChatMessage, modifier: Modifier = Modifier) {
                     .clip(RoundedCornerShape(3.dp))
                     .background(scheme.primary)
             )
-            Text(
+            MarkdownText(
                 text = message.text,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f)

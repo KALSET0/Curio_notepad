@@ -65,6 +65,7 @@ import com.curio.notes.ui.components.CurioPrimaryButton
 import com.curio.notes.ui.components.CurioSecondaryButton
 import com.curio.notes.ui.components.DeleteDialog
 import com.curio.notes.ui.components.ErrorText
+import com.curio.notes.ui.components.MarkdownText
 import com.curio.notes.ui.components.ProcessingIndicator
 import com.curio.notes.ui.components.SectionHeader
 import com.curio.notes.ui.components.ShareButton
@@ -457,7 +458,7 @@ private fun ConversationHistory(messages: List<ChatMessage>, modifier: Modifier 
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth(0.9f)
                 ) {
-                    Text(
+                    MarkdownText(
                         text = message.text,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
