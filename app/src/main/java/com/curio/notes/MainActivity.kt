@@ -34,13 +34,17 @@ class MainActivity : ComponentActivity() {
             val theme by container.settingsRepository.observeTheme()
                 .collectAsStateWithLifecycle(initialValue = AppTheme.SYSTEM)
             val language by container.settingsRepository.observeLanguage()
-                .collectAsStateWithLifecycle(initialValue = AppLanguage.SYSTEM)
+                .collectAsStateWithLifecycle(initialValue = null)
             LaunchedEffect(language) {
+                // Null is the "unknown yet" placeholder, not a real choice:
+                // acting on it is what caused the recreate loop (it briefly
+                // looked like SYSTEM while the stored value was still loading).
+                val current = language ?: return@LaunchedEffect
                 // Mirror matches DataStore in steady state, so this only fires
                 // right after the user picks a new language: persist the sync
                 // copy and recreate so the new locale takes effect at once.
-                if (readStoredLanguage(applicationContext) != language) {
-                    writeStoredLanguage(applicationContext, language)
+                if (readStoredLanguage(applicationContext) != current) {
+                    writeStoredLanguage(applicationContext, current)
                     recreate()
                 }
             }
