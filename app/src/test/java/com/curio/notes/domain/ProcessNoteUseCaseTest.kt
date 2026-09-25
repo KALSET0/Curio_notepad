@@ -4,6 +4,7 @@ import com.curio.notes.ai.AIProvider
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiJson
 import com.curio.notes.ai.ChatMessage
+import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.domain.model.NoteType
@@ -110,6 +111,59 @@ class ProcessNoteUseCaseTest {
         assertEquals(NoteStatus.ANSWERED, repository.observeNote(pendingId).first()!!.status)
         assertEquals(NoteStatus.ANSWERED, repository.observeNote(stuckId).first()!!.status)
         assertEquals(NoteStatus.ANSWERED, repository.observeNote(doneId).first()!!.status)
+    }
+
+    @Test
+    fun `reanalyze resets answer clears conversation and reprocesses`() = runTest {
+        val repository = FakeNoteRepository()
+        val first = AIResponse(type = NoteType.CONCEPT, title = "First")
+        val second = AIResponse(type = NoteType.QUESTION, title = "Second")
+        val provider = FakeAIProvider(response = first)
+        val useCase = ProcessNoteUseCase(repository, provider, this)
+
+        val id = repository.createNote("Title", "Define photosynthesis")
+        useCase.enqueue(id)
+        advanceUntilIdle()
+        repository.appendConversationMessage(id, ChatMessage(ChatRole.USER, "Hi"))
+
+        provider.response = second
+        useCase.reanalyze(id)
+        advanceUntilIdle()
+
+        val saved = repository.observeNote(id).first()!!
+        assertEquals(NoteStatus.ANSWERED, saved.status)
+        assertEquals(NoteType.QUESTION, saved.type)
+        assertEquals(second, AiJson.decodeFromString<AIResponse>(saved.aiResponseJson!!))
+        assertEquals(2, provider.calls)
+        assertTrue(repository.observeConversation(id).first().isEmpty())
+    }
+
+    @Test
+    fun `reanalyze skips in-flight notes`() = runTest {
+        val repository = FakeNoteRepository()
+        val provider = FakeAIProvider()
+        val useCase = ProcessNoteUseCase(repository, provider, this)
+
+        val id = repository.createNote("Title", "Define photosynthesis")
+        repository.updateNote(
+            repository.observeNote(id).first()!!.copy(status = NoteStatus.PROCESSING)
+        )
+        useCase.reanalyze(id)
+        advanceUntilIdle()
+
+        assertEquals(0, provider.calls)
+    }
+
+    @Test
+    fun `reanalyze missing note does nothing`() = runTest {
+        val repository = FakeNoteRepository()
+        val provider = FakeAIProvider()
+        val useCase = ProcessNoteUseCase(repository, provider, this)
+
+        useCase.reanalyze(999L)
+        advanceUntilIdle()
+
+        assertEquals(0, provider.calls)
     }
 
     private class FakeAIProvider(

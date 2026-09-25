@@ -45,4 +45,22 @@ class ProcessNoteUseCase(
             repository.updateNote(note.copy(status = NoteStatus.ERROR, errorMessage = code))
         }
     }
+
+    // Re-runs the AI on an answered (or failed) note: drops the old answer
+    // and its conversation, then processes from scratch. In-flight or
+    // already-queued notes are left alone to avoid duplicate work.
+    suspend fun reanalyze(noteId: Long) {
+        val note = repository.observeNote(noteId).firstOrNull() ?: return
+        if (note.status == NoteStatus.PROCESSING || note.status == NoteStatus.PENDING) return
+        repository.updateNote(
+            note.copy(
+                type = null,
+                aiResponseJson = null,
+                errorMessage = null,
+                status = NoteStatus.PENDING
+            )
+        )
+        repository.clearConversation(noteId)
+        enqueue(noteId)
+    }
 }

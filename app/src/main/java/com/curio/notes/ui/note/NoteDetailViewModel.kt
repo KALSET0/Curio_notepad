@@ -62,6 +62,12 @@ class NoteDetailViewModel(
         processNoteUseCase.enqueue(current.id)
     }
 
+    fun reanalyze() {
+        val current = note.value ?: return
+        if (current.status == NoteStatus.PROCESSING || current.status == NoteStatus.PENDING) return
+        updateFlag { processNoteUseCase.reanalyze(current.id) }
+    }
+
     fun deleteNote(onDeleted: () -> Unit) {
         val current = note.value ?: return
         _operationError.value = null

@@ -57,6 +57,7 @@
     <string name="detail_title_label">Title</string>
     <string name="detail_original_label">Original thought</string>
     <string name="action_save_changes">Save changes</string>
+    <string name="action_reanalyze">Re-analyze with AI</string>
     <string name="ai_unavailable">The AI response couldn\'t be displayed.</string>
     <string name="continue_ai">Continue with AI</string>
     <string name="note_gone">This note no longer exists.</string>

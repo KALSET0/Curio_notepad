@@ -167,6 +167,7 @@ fun NoteDetailScreen(
                     operationError = operationError,
                     onSave = { title, body -> viewModel.saveChanges(title, body) },
                     onRetry = viewModel::retryProcessing,
+                    onReanalyze = viewModel::reanalyze,
                     onContinueWithAI = onContinueWithAI,
                     onToggleArchive = viewModel::toggleArchive,
                     onTogglePin = viewModel::togglePin,
@@ -185,6 +186,7 @@ private fun NoteDetailContent(
     conversation: List<ChatMessage>,
     onSave: (String, String) -> Unit,
     onRetry: () -> Unit,
+    onReanalyze: () -> Unit,
     onContinueWithAI: () -> Unit,
     onToggleArchive: () -> Unit,
     onTogglePin: () -> Unit,
@@ -308,6 +310,18 @@ private fun NoteDetailContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(R.string.action_save_changes))
+        }
+        if (note.status == NoteStatus.ANSWERED) {
+            OutlinedButton(
+                onClick = onReanalyze,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+                Text(
+                    stringResource(R.string.action_reanalyze),
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
         }
         OutlinedButton(
             onClick = { showDeleteDialog = true },
