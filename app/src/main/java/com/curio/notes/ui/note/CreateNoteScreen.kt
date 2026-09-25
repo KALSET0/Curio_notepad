@@ -12,9 +12,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -34,7 +37,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.ui.components.CopyIconButton
-import com.curio.notes.ui.components.CurioPrimaryButton
 import com.curio.notes.ui.components.ErrorText
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.rememberAppContainer
@@ -80,6 +82,23 @@ fun CreateNoteScreen(
                             contentDescription = stringResource(R.string.cd_back)
                         )
                     }
+                },
+                actions = {
+                    TextButton(
+                        onClick = {
+                            saving = true
+                            viewModel.saveNote(title, body, onBack)
+                        },
+                        enabled = body.isNotBlank() && !saving
+                    ) {
+                        Text(
+                            if (saving) {
+                                stringResource(R.string.action_saving)
+                            } else {
+                                stringResource(R.string.action_save)
+                            }
+                        )
+                    }
                 }
             )
         }
@@ -89,56 +108,50 @@ fun CreateNoteScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .imePadding()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
         ) {
-            OutlinedTextField(
+            TextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text(stringResource(R.string.create_title_label)) },
+                placeholder = { Text(stringResource(R.string.create_title_label)) },
+                textStyle = MaterialTheme.typography.titleLarge,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                colors = borderlessFieldColors(),
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            TextField(
                 value = body,
                 onValueChange = { body = it },
-                label = { Text(stringResource(R.string.create_body_label)) },
+                placeholder = { Text(stringResource(R.string.create_body_label)) },
+                textStyle = MaterialTheme.typography.bodyLarge,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                colors = borderlessFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(top = 12.dp)
                     .focusRequester(focusRequester),
                 trailingIcon = {
                     if (body.isNotBlank()) {
                         CopyIconButton(text = body)
                     }
-                },
-                supportingText = {
-                    Text(stringResource(R.string.create_supporting))
                 }
             )
-            CurioPrimaryButton(
-                text = if (saving) {
-                    stringResource(R.string.action_saving)
-                } else {
-                    stringResource(R.string.action_save)
-                },
-                onClick = {
-                    saving = true
-                    viewModel.saveNote(title, body, onBack)
-                },
-                enabled = body.isNotBlank() && !saving,
-                modifier = Modifier.padding(top = 12.dp)
-            )
             saveError?.let { code ->
-                ErrorText(text = errorMessageFor(code))
+                ErrorText(
+                    text = errorMessageFor(code),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
             }
-            Text(
-                text = stringResource(R.string.create_tagline),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp)
-            )
         }
     }
 }
+
+@Composable
+private fun borderlessFieldColors() = TextFieldDefaults.colors(
+    focusedContainerColor = Color.Transparent,
+    unfocusedContainerColor = Color.Transparent,
+    disabledContainerColor = Color.Transparent,
+    focusedIndicatorColor = Color.Transparent,
+    unfocusedIndicatorColor = Color.Transparent
+)
