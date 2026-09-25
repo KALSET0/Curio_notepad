@@ -68,6 +68,7 @@
     <string name="note_gone">This note no longer exists.</string>
 
     <!-- Search -->
+    <string name="search_title">Search</string>
     <string name="search_label">Search titles, thoughts, AI content</string>
     <string name="cd_clear_search">Clear search</string>
     <string name="search_hint">Find old curiosities across titles, original thoughts, AI explanations, and related topics.</string>

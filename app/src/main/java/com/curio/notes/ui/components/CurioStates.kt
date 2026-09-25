@@ -17,7 +17,7 @@ import com.curio.notes.ui.theme.Spacing
 @Composable
 fun EmptyState(
     title: String,
-    body: String,
+    body: String = "",
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -28,11 +28,13 @@ fun EmptyState(
             .padding(Spacing.xl)
     ) {
         Text(text = title, style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (body.isNotBlank()) {
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

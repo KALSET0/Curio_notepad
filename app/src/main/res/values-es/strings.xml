@@ -68,6 +68,7 @@
     <string name="note_gone">Esta nota ya no existe.</string>
 
     <!-- Search -->
+    <string name="search_title">Buscar</string>
     <string name="search_label">Buscar en títulos, ideas, contenido de la IA</string>
     <string name="cd_clear_search">Limpiar búsqueda</string>
     <string name="search_hint">Encuentra curiosidades pasadas en títulos, ideas originales, explicaciones de la IA y temas relacionados.</string>
