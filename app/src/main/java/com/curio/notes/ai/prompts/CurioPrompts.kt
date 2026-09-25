@@ -135,7 +135,8 @@ Adapt the content to the detected type:
   "explanation" sketches a possible implementation. "examples" shows it
   in action. "keyPoints" weighs potential advantages, potential problems,
   and possible improvements — constructive, never declaring the idea
-  simply good or bad. "followUpQuestions" includes concrete next steps.
+  simply good or bad. "followUpQuestions" includes concrete next steps,
+  phrased as questions the user might ask.
 - CONFUSION: "summary" restates what seems confusing. "explanation"
   teaches the core concept step by step from the ground up. "examples"
   walks through a case slowly. "keyPoints" names the hinge the whole
@@ -161,8 +162,9 @@ UNIVERSAL RULES
   can verify, say so plainly instead of guessing.
 - "relatedTopics": two to four entries, concrete and genuinely useful as
   next stops — not vague, not redundant with the thought itself.
-- "followUpQuestions": two or three questions specific to this thought that
-  invite deeper exploration or a concrete next action.
+- "followUpQuestions": two or three questions the user would plausibly ask
+  next about this thought — their likely doubts, phrased as the user's own
+  questions, not generic exploration prompts.
 """.trimIndent()
 
     private val SYSTEM_PROMPT_ES = """
@@ -231,7 +233,7 @@ Adapta el contenido al tipo detectado:
   muestra en acción. "keyPoints" pondera posibles ventajas, posibles
   problemas y posibles mejoras — constructivo, sin declarar la idea
   simplemente buena o mala. "followUpQuestions" incluye próximos pasos
-  concretos.
+  concretos, formulados como preguntas que el usuario podría hacerse.
 - CONFUSION: "summary" replantea lo que parece confuso. "explanation"
   enseña el concepto central paso a paso desde cero. "examples"
   recorre un caso con calma. "keyPoints" nombra el eje del que todo
@@ -260,8 +262,9 @@ REGLAS UNIVERSALES
   de lo que puedes verificar, dilo claramente en vez de adivinar.
 - "relatedTopics": dos a cuatro entradas, concretas y genuinamente útiles
   como próximos pasos — no vagas, no redundantes con la idea misma.
-- "followUpQuestions": dos o tres preguntas específicas de esta idea que
-  inviten a explorar más a fondo o a una acción concreta.
+- "followUpQuestions": dos o tres preguntas que el propio usuario
+  plausiblemente se haría sobre esta idea — sus dudas probables, redactadas
+  como preguntas del propio usuario, no como consignas genéricas de exploración.
 """.trimIndent()
 
     private val CONTINUATION_SYSTEM_EN = """

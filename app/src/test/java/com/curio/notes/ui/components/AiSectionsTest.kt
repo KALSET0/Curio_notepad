@@ -149,4 +149,20 @@ class AiSectionsTest {
         assertTrue(formatted.contains("Definición"))
         assertTrue(!formatted.contains("Definition"))
     }
+
+    @Test
+    fun `reflection follow-ups read as possible doubts`() {
+        val response = AIResponse(
+            type = NoteType.REFLECTION,
+            title = "t",
+            followUpQuestions = listOf("q")
+        )
+        val english = sectionsFor(response).single()
+        assertTrue(english is AiSection.Questions)
+        assertEquals("Possible Doubts", (english as AiSection.Questions).heading)
+
+        val spanish = sectionsFor(response, AiLanguage.SPANISH).single()
+        assertTrue(spanish is AiSection.Questions)
+        assertEquals("Posibles dudas", (spanish as AiSection.Questions).heading)
+    }
 }

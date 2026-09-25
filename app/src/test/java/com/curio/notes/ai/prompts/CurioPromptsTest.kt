@@ -129,6 +129,17 @@ class CurioPromptsTest {
     }
 
     @Test
+    fun `follow-up questions must read as the user's own likely doubts`() {
+        val english = CurioPrompts.systemPromptFor(AiLanguage.ENGLISH)
+        assertTrue(english.contains("plausibly ask"))
+        assertTrue(english.contains("user's own"))
+
+        val spanish = CurioPrompts.systemPromptFor(AiLanguage.SPANISH)
+        assertTrue(spanish.contains("propio usuario"))
+        assertTrue(spanish.contains("dudas probables"))
+    }
+
+    @Test
     fun `spanish continuation system demands spanish prose`() {
         val system = CurioPrompts.continuationSystemFor(AiLanguage.SPANISH).lowercase()
         assertTrue(system.contains("espa"))

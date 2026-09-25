@@ -95,7 +95,7 @@ private fun headingsEnFor(type: NoteType): Headings = when (type) {
     )
     NoteType.REFLECTION -> Headings(
         "Interpretation", "Different Angles", "Examples",
-        "Points to Consider", "Related Topics", "Questions Worth Considering"
+        "Points to Consider", "Related Topics", "Possible Doubts"
     )
     NoteType.OTHER -> Headings(
         "Summary", "Details", "Examples",
@@ -130,7 +130,7 @@ private fun headingsEsFor(type: NoteType): Headings = when (type) {
     )
     NoteType.REFLECTION -> Headings(
         "Interpretación", "Distintas miradas", "Ejemplos",
-        "Puntos a considerar", "Temas relacionados", "Preguntas para reflexionar"
+        "Puntos a considerar", "Temas relacionados", "Posibles dudas"
     )
     NoteType.OTHER -> Headings(
         "Resumen", "Detalles", "Ejemplos",
