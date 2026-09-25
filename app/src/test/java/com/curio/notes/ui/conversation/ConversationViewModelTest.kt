@@ -169,6 +169,84 @@ class ConversationViewModelTest {
             second.messages.value
         )
     }
+
+    @Test
+    fun `resend drops reply and refetches with edited text`() = runTest {
+        val repository = FakeNoteRepository()
+        val id = repository.createNote("Title", "Define photosynthesis")
+        val fake = FakeConversationAI()
+        val viewModel = ConversationViewModel(repository, fake, id)
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.messages.collect {} }
+        advanceUntilIdle()
+
+        viewModel.send("First")
+        advanceUntilIdle()
+        assertEquals(2, viewModel.messages.value.size)
+
+        viewModel.resend(0, "Edited")
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                ChatMessage(ChatRole.USER, "Edited"),
+                ChatMessage(ChatRole.MODEL, "Reply to: Edited")
+            ),
+            viewModel.messages.value
+        )
+        assertTrue(fake.lastHistory.isEmpty())
+        assertEquals(2, fake.calls)
+    }
+
+    @Test
+    fun `resend with same text regenerates the reply`() = runTest {
+        val repository = FakeNoteRepository()
+        val id = repository.createNote("Title", "Define photosynthesis")
+        val fake = FakeConversationAI()
+        val viewModel = ConversationViewModel(repository, fake, id)
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.messages.collect {} }
+        advanceUntilIdle()
+
+        viewModel.send("First")
+        advanceUntilIdle()
+        viewModel.resend(0, "First")
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.messages.value.size)
+        assertEquals(
+            listOf(
+                ChatMessage(ChatRole.USER, "First"),
+                ChatMessage(ChatRole.MODEL, "Reply to: First")
+            ),
+            viewModel.messages.value
+        )
+        assertEquals(2, fake.calls)
+    }
+
+    @Test
+    fun `resend ignores invalid targets`() = runTest {
+        val repository = FakeNoteRepository()
+        val id = repository.createNote("Title", "Define photosynthesis")
+        val fake = FakeConversationAI()
+        val viewModel = ConversationViewModel(repository, fake, id)
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.messages.collect {} }
+        advanceUntilIdle()
+
+        viewModel.send("First")
+        advanceUntilIdle()
+
+        viewModel.resend(1, "Nope")
+        viewModel.resend(5, "Nope")
+        viewModel.resend(-1, "Nope")
+        viewModel.resend(0, "   ")
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.messages.value.size)
+        assertEquals(1, fake.calls)
+    }
+
     private class FakeConversationAI(
         var failure: IOException? = null,
         var calls: Int = 0,

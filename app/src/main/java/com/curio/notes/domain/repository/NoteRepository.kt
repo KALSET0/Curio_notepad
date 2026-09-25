@@ -20,4 +20,5 @@ interface NoteRepository {
     fun observeConversation(noteId: Long): Flow<List<ChatMessage>>
     suspend fun appendConversationMessage(noteId: Long, message: ChatMessage)
     suspend fun clearConversation(noteId: Long)
+    suspend fun truncateConversation(noteId: Long, keepCount: Int)
 }

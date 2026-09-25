@@ -128,6 +128,9 @@
     <string name="cd_send">Enviar</string>
     <string name="conv_empty_hint">Pregunta lo que sea sobre esta idea — su contexto ya está incluido.</string>
     <string name="conv_history_title">Conversación</string>
+    <string name="menu_edit">Editar</string>
+    <string name="suggestions_title">Preguntas de seguimiento</string>
+    <string name="conv_editing">Editar mensaje</string>
 
     <!-- AI response card -->
     <string name="ai_header">Explicación de la IA · %1$s</string>

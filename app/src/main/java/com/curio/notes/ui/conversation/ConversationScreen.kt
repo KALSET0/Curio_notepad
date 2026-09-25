@@ -1,7 +1,14 @@
 package com.curio.notes.ui.conversation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +29,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.QuestionMark
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -57,11 +70,11 @@ import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.formatGenerationDuration
 import com.curio.notes.domain.model.Note
-import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.components.ErrorText
 import com.curio.notes.ui.components.MarkdownText
 import com.curio.notes.ui.components.ShareButton
 import com.curio.notes.ui.components.appAiLanguage
+import com.curio.notes.ui.components.copyToClipboard
 import com.curio.notes.ui.theme.Spacing
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.formatNoteExport
@@ -93,9 +106,21 @@ fun ConversationScreen(
     val aiResponse by viewModel.aiResponse.collectAsStateWithLifecycle()
     val developerMode by viewModel.developerMode.collectAsStateWithLifecycle()
     var draft by rememberSaveable { mutableStateOf("") }
+    var menuForIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var suggestionsOpen by rememberSaveable { mutableStateOf(false) }
+    var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var savedDraft by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val language = appAiLanguage()
+    val questions = aiResponse?.followUpQuestions.orEmpty()
+
+    // While editing, system back cancels the edit instead of leaving.
+    BackHandler(enabled = editingIndex != null) {
+        draft = savedDraft
+        savedDraft = ""
+        editingIndex = null
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -140,112 +165,218 @@ fun ConversationScreen(
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            note?.let { ContextHeader(note = it) }
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentPadding = PaddingValues(Spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(Spacing.md)
-            ) {
-                items(messages) { message ->
-                    MessageBubble(
-                        message = message,
-                        showGeneration = developerMode
-                    )
-                }
-                if (isSending) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.conv_thinking),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                note?.let { ContextHeader(note = it) }
+                val lastUserIndex = messages.indexOfLast { it.role == ChatRole.USER }
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentPadding = PaddingValues(Spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    items(messages.size) { index ->
+                        val message = messages[index]
+                        Box {
+                            MessageBubble(
+                                message = message,
+                                showGeneration = developerMode,
+                                onLongPress = { menuForIndex = index }
+                            )
+                            DropdownMenu(
+                                expanded = menuForIndex == index,
+                                onDismissRequest = { menuForIndex = null }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.cd_copy)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        menuForIndex = null
+                                        copyToClipboard(context, message.text)
+                                    }
+                                )
+                                if (index == lastUserIndex) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.menu_edit)) },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Edit, contentDescription = null)
+                                        },
+                                        onClick = {
+                                            menuForIndex = null
+                                            savedDraft = draft
+                                            draft = message.text
+                                            editingIndex = index
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_retry)) },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Refresh, contentDescription = null)
+                                        },
+                                        onClick = {
+                                            menuForIndex = null
+                                            editingIndex = null
+                                            savedDraft = ""
+                                            viewModel.resend(index, message.text)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (isSending) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.conv_thinking),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
-            }
-            ConversationSuggestions(
-                questions = aiResponse?.followUpQuestions.orEmpty(),
-                hasMessages = messages.isNotEmpty(),
-                isSending = isSending,
-                onSelect = viewModel::send
-            )
-            error?.let { code ->
+                if (questions.isEmpty() && messages.isEmpty() && !isSending) {
+                    Text(
+                        text = stringResource(R.string.conv_empty_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.lg)
+                    )
+                }
+                error?.let { code ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ErrorText(
+                            text = errorMessageFor(code),
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = viewModel::retry) {
+                            Text(stringResource(R.string.action_retry))
+                        }
+                    }
+                }
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().imePadding().padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ErrorText(
-                        text = errorMessageFor(code),
+                    OutlinedTextField(
+                        value = draft,
+                        onValueChange = { draft = it },
+                        label = {
+                            Text(
+                                stringResource(
+                                    if (editingIndex != null) {
+                                        R.string.conv_editing
+                                    } else {
+                                        R.string.conv_hint
+                                    }
+                                )
+                            )
+                        },
+                        maxLines = 3,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = viewModel::retry) {
-                        Text(stringResource(R.string.action_retry))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (questions.isNotEmpty() && !isSending) {
+                            IconButton(onClick = { suggestionsOpen = !suggestionsOpen }) {
+                                Icon(
+                                    Icons.Default.QuestionMark,
+                                    contentDescription = stringResource(R.string.suggestions_title)
+                                )
+                            }
+                        }
+                        FilledIconButton(
+                            onClick = {
+                                val target = editingIndex
+                                if (target != null) {
+                                    viewModel.resend(target, draft)
+                                    editingIndex = null
+                                    savedDraft = ""
+                                    draft = ""
+                                } else {
+                                    viewModel.send(draft)
+                                    draft = ""
+                                }
+                                suggestionsOpen = false
+                            },
+                            enabled = draft.isNotBlank() && isReady && !isSending
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Send,
+                                contentDescription = stringResource(R.string.cd_send)
+                            )
+                        }
                     }
                 }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth().imePadding().padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            AnimatedVisibility(
+                visible = suggestionsOpen,
+                enter = slideInHorizontally { it } + fadeIn(),
+                exit = slideOutHorizontally { it } + fadeOut(),
+                modifier = Modifier.align(Alignment.CenterEnd)
             ) {
-                OutlinedTextField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    label = { Text(stringResource(R.string.conv_hint)) },
-                    maxLines = 3,
-                    modifier = Modifier.weight(1f)
-                )
-                FilledIconButton(
-                    onClick = {
-                        viewModel.send(draft)
-                        draft = ""
+                SuggestionsPanel(
+                    questions = questions,
+                    onSelect = {
+                        viewModel.send(it)
+                        suggestionsOpen = false
                     },
-                    enabled = draft.isNotBlank() && isReady && !isSending
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Send,
-                        contentDescription = stringResource(R.string.cd_send)
-                    )
-                }
+                    onClose = { suggestionsOpen = false }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ConversationSuggestions(
+private fun SuggestionsPanel(
     questions: List<String>,
-    hasMessages: Boolean,
-    isSending: Boolean,
     onSelect: (String) -> Unit,
+    onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (isSending) return
-    if (questions.isEmpty()) {
-        if (hasMessages) return
-        Text(
-            text = stringResource(R.string.conv_empty_hint),
-            style = MaterialTheme.typography.bodySmall,
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg)
-        )
-        return
-    }
-    Column(
+    Surface(
+        tonalElevation = 3.dp,
+        shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+            .fillMaxHeight()
+            .width(300.dp)
     ) {
-        questions.forEach { question ->
-            SuggestionChip(
-                onClick = { onSelect(question) },
-                label = { Text(text = question) },
-                modifier = Modifier.fillMaxWidth()
-            )
+        Column(
+            modifier = Modifier.padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                Text(
+                    text = stringResource(R.string.suggestions_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onClose) {
+                    Icon(
+                        Icons.Default.QuestionMark,
+                        contentDescription = stringResource(R.string.suggestions_title)
+                    )
+                }
+            }
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                items(questions) { question ->
+                    SuggestionChip(
+                        onClick = { onSelect(question) },
+                        label = { Text(text = question) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
     }
 }
@@ -310,13 +441,16 @@ private fun ContextHeader(note: Note, modifier: Modifier = Modifier) {
 private fun MessageBubble(
     message: ChatMessage,
     modifier: Modifier = Modifier,
-    showGeneration: Boolean = false
+    showGeneration: Boolean = false,
+    onLongPress: () -> Unit = {}
 ) {
     val isUser = message.role == ChatRole.USER
     val scheme = MaterialTheme.colorScheme
     if (isUser) {
         Row(
-            modifier = modifier.fillMaxWidth(),
+            modifier = modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = {}, onLongClick = onLongPress),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -332,12 +466,15 @@ private fun MessageBubble(
                     modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm)
                 )
             }
-            CopyIconButton(text = message.text)
         }
     } else {
         // Model answers read as knowledge, not chat bubbles: accent bar
-        // plus plain text, with copy consistently trailing.
-        Column(modifier = modifier.fillMaxWidth()) {
+        // plus plain text.
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = {}, onLongClick = onLongPress)
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -356,7 +493,6 @@ private fun MessageBubble(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f)
                 )
-                CopyIconButton(text = message.text)
             }
             if (showGeneration && message.generationLabel != null) {
                 Text(

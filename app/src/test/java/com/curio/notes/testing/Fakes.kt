@@ -109,6 +109,11 @@ class FakeNoteRepository : NoteRepository {
     override suspend fun clearConversation(noteId: Long) {
         conversations.value -= noteId
     }
+
+    override suspend fun truncateConversation(noteId: Long, keepCount: Int) {
+        conversations.value += noteId to conversations.value[noteId].orEmpty()
+            .take(keepCount.coerceAtLeast(0))
+    }
 }
 
 class FakeWebSearch(

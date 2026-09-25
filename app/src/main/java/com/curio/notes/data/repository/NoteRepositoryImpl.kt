@@ -94,6 +94,10 @@ class NoteRepositoryImpl(
         conversationDao.deleteByNoteId(noteId)
     }
 
+    override suspend fun truncateConversation(noteId: Long, keepCount: Int) {
+        conversationDao.truncateToCount(noteId, keepCount.coerceAtLeast(0))
+    }
+
     private fun escapeLike(query: String): String =
         query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 

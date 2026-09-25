@@ -71,16 +71,41 @@ class ConversationViewModel(
         fetchReply(history = current.dropLast(1), input = lastUser.text, appendUser = false)
     }
 
+    // Re-sends the last user message, optionally edited: everything from it
+    // on (including an AI reply) is dropped first, then the exchange runs
+    // again. Powers menu retry (same text) and edit-and-send (new text).
+    fun resend(index: Int, newText: String) {
+        val text = newText.trim()
+        val current = messages.value
+        if (text.isBlank() || _isSending.value) return
+        if (index < 0 || index >= current.size) return
+        if (current[index].role != ChatRole.USER) return
+        if (current.drop(index + 1).any { it.role == ChatRole.USER }) return
+        if (buildContext() == null) return
+        fetchReply(
+            history = current.take(index),
+            input = text,
+            appendUser = true,
+            truncateTo = index
+        )
+    }
+
     fun dismissError() {
         _error.value = null
     }
 
-    private fun fetchReply(history: List<ChatMessage>, input: String, appendUser: Boolean) {
+    private fun fetchReply(
+        history: List<ChatMessage>,
+        input: String,
+        appendUser: Boolean,
+        truncateTo: Int? = null
+    ) {
         val context = buildContext() ?: return
         _isSending.value = true
         _error.value = null
         viewModelScope.launch {
             try {
+                truncateTo?.let { repository.truncateConversation(noteId, it) }
                 if (appendUser) {
                     repository.appendConversationMessage(noteId, ChatMessage(ChatRole.USER, input))
                 }

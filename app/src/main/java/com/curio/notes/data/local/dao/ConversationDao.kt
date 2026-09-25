@@ -19,4 +19,13 @@ interface ConversationDao {
 
     @Query("DELETE FROM conversation_messages WHERE noteId = :noteId")
     suspend fun deleteByNoteId(noteId: Long)
+
+    // Keeps the first keepCount messages (chronological) and drops the rest.
+    // keepCount = 0 clears everything, mirroring clearConversation callers.
+    @Query(
+        "DELETE FROM conversation_messages WHERE noteId = :noteId AND id NOT IN (" +
+            "SELECT id FROM conversation_messages WHERE noteId = :noteId " +
+            "ORDER BY createdAt ASC, id ASC LIMIT :keepCount)"
+    )
+    suspend fun truncateToCount(noteId: Long, keepCount: Int)
 }
