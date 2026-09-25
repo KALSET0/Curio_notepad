@@ -3,8 +3,10 @@ package com.curio.notes.ui.components
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -42,6 +44,14 @@ fun CurioBackground(
                     )
                 )
             },
-        content = { content() }
+        // Transparent scaffolds make M3 resolve inherited text color to
+        // black. Pin it explicitly so every screen under this background
+        // inherits the readable onBackground color.
+        content = {
+            CompositionLocalProvider(
+                LocalContentColor provides scheme.onBackground,
+                content = content
+            )
+        }
     )
 }

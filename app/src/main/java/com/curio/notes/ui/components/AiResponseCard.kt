@@ -1,12 +1,16 @@
 package com.curio.notes.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -14,10 +18,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
 import com.curio.notes.R
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiLanguage
@@ -171,14 +177,14 @@ fun AiResponseCard(response: AIResponse, modifier: Modifier = Modifier) {
                 )
             )
         }
-        sections.forEachIndexed { index, section ->
-            if (index > 0) {
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
+            sections.forEachIndexed { index, section ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                }
+                AiSectionContent(section, isFirst = index == 0)
             }
-            AiSectionContent(section)
-        }
     }
 }
 
@@ -190,7 +196,7 @@ fun appAiLanguage(): AiLanguage {
 }
 
 @Composable
-private fun AiSectionContent(section: AiSection) {
+private fun AiSectionContent(section: AiSection, isFirst: Boolean = false) {
     when (section) {
         is AiSection.Paragraph -> {
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -198,7 +204,16 @@ private fun AiSectionContent(section: AiSection) {
                     heading = section.heading,
                     copyText = "${section.heading}\n${section.body}"
                 )
-                MarkdownText(text = section.body, style = MaterialTheme.typography.bodyLarge)
+                // Editorial lede: the opening answer reads larger, like the
+                // first paragraph of a knowledge article.
+                MarkdownText(
+                    text = section.body,
+                    style = if (isFirst) {
+                        MaterialTheme.typography.titleLarge
+                    } else {
+                        MaterialTheme.typography.bodyLarge
+                    }
+                )
             }
         }
         is AiSection.Bullets -> {
@@ -313,8 +328,16 @@ private fun SectionHeadingRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
     ) {
+        // Signature marker: a small sky-blue dot before every AI heading.
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+        )
         SectionHeader(heading, modifier = Modifier.weight(1f))
         CopyIconButton(text = copyText)
     }

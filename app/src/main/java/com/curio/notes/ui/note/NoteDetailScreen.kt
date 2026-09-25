@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +49,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,6 +65,7 @@ import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.ui.components.AiResponseCard
 import com.curio.notes.ui.components.CopyIconButton
+import com.curio.notes.ui.components.CurioBackground
 import com.curio.notes.ui.components.CurioPrimaryButton
 import com.curio.notes.ui.components.CurioSecondaryButton
 import com.curio.notes.ui.components.DeleteDialog
@@ -114,6 +118,7 @@ fun NoteDetailScreen(
     }
     if (current == null) {
         Scaffold(
+            containerColor = Color.Transparent,
             topBar = {
                 NoteDetailTopBar(
                     title = stringResource(R.string.detail_title),
@@ -121,12 +126,13 @@ fun NoteDetailScreen(
                 )
             }
         ) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
+            CurioBackground {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
                 if (sawNote) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -150,6 +156,7 @@ fun NoteDetailScreen(
                 }
             }
         }
+        }
     } else {
         key(current.id) {
             var title by rememberSaveable { mutableStateOf(current.title) }
@@ -158,6 +165,7 @@ fun NoteDetailScreen(
             var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
             val changed = title != current.title || body != current.originalText
             Scaffold(
+                containerColor = Color.Transparent,
                 topBar = {
                     NoteDetailTopBar(
                         title = stringResource(R.string.detail_title_with_name, current.title),
@@ -267,7 +275,8 @@ fun NoteDetailScreen(
                     )
                 }
             ) { padding ->
-                NoteDetailContent(
+                CurioBackground {
+                    NoteDetailContent(
                     note = current,
                     aiResponse = aiResponse,
                     conversation = conversation,
@@ -282,6 +291,7 @@ fun NoteDetailScreen(
                     modifier = Modifier.padding(padding)
                 )
             }
+        }
             if (showDeleteDialog) {
                 DeleteDialog(
                     count = 1,
@@ -305,6 +315,9 @@ private fun NoteDetailTopBar(
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent
+        ),
         title = {
             Text(
                 text = title,
@@ -379,14 +392,17 @@ private fun NoteDetailContent(
                     style = MaterialTheme.typography.labelSmall
                 )
             }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = formatTimestamp(note.createdAt, appLocale()),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        Text(
-            text = stringResource(R.string.detail_created, formatTimestamp(note.createdAt, appLocale())),
-            style = MaterialTheme.typography.labelSmall
-        )
         SectionHeader(text = stringResource(R.string.thought_header))
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             shape = MaterialTheme.shapes.medium
         ) {
             Column(
