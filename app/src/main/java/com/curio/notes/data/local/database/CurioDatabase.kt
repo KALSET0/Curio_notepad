@@ -11,7 +11,7 @@ import com.curio.notes.data.local.entity.NoteEntity
 
 @Database(
     entities = [NoteEntity::class, ConversationMessageEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class CurioDatabase : RoomDatabase() {
@@ -48,5 +48,14 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
             "CREATE INDEX IF NOT EXISTS index_conversation_messages_noteId " +
                 "ON conversation_messages(noteId)"
         )
+    }
+}
+
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE notes ADD COLUMN generationLabel TEXT")
+        db.execSQL("ALTER TABLE notes ADD COLUMN generationMillis INTEGER")
+        db.execSQL("ALTER TABLE conversation_messages ADD COLUMN generationLabel TEXT")
+        db.execSQL("ALTER TABLE conversation_messages ADD COLUMN generationMillis INTEGER")
     }
 }

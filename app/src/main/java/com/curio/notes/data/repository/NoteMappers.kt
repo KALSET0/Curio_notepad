@@ -18,6 +18,8 @@ internal fun NoteEntity.toDomain(): Note = Note(
     status = runCatching { NoteStatus.valueOf(status) }.getOrDefault(NoteStatus.PENDING),
     isArchived = isArchived,
     isPinned = isPinned,
+    generationLabel = generationLabel,
+    generationMillis = generationMillis,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
@@ -32,11 +34,15 @@ internal fun Note.toEntity(): NoteEntity = NoteEntity(
     status = status.name,
     isArchived = isArchived,
     isPinned = isPinned,
+    generationLabel = generationLabel,
+    generationMillis = generationMillis,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
 
 internal fun ConversationMessageEntity.toChatMessage(): ChatMessage = ChatMessage(
     role = runCatching { ChatRole.valueOf(role) }.getOrDefault(ChatRole.USER),
-    text = text
+    text = text,
+    generationLabel = generationLabel,
+    generationMillis = generationMillis
 )

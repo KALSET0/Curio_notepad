@@ -200,7 +200,11 @@ The app can talk to Ollama running on your laptop over your own Wi-Fi (no intern
 2. A new **Developer options** section appears above About: enter the Server URL (`http://192.168.1.10:11434`) and the Model (`qwen3:8b`), then **Test connection**.
 3. Back in the AI provider section, pick **Local AI server**.
 
-Turning Developer mode off while Ollama is active safely falls back to Mock AI. Note: Qwen3 "thinking" traces (`<think>…</think>`) may leak into answers with some models — if you see them, open an issue and a stripper will be added.
+Turning Developer mode off while Ollama is active safely falls back to Mock AI. Qwen3 "thinking" traces (`<think>…</think>`) are stripped automatically from chat answers (and before JSON decoding); if a reply comes back empty because of it, the note shows a retryable error.
+
+### Developer-mode generation info
+
+With Developer mode on, every AI answer carries diagnostics in small blue letters: the provider and model (`Ollama · qwen3:8b`) plus the end-to-end generation time (`8.4 s`, gatekeeper and web search included). Notes show it under the AI response, conversations under each AI message, and the create screen shows the active provider above Save. The data is stored with the note/message rows, so it survives restarts.
 
 ---
 

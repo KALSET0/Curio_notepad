@@ -162,4 +162,69 @@ class OllamaAIProviderTest {
         assertEquals(listOf("coffee"), web.queries)
         assertEquals(listOf(AiSource("Real", "https://real.com/a")), actual.sources)
     }
+
+    @Test
+    fun `conversation extracts message content`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope(AiJson.encodeToString("Just the answer."))
+            )
+        )
+
+        val reply = provider().continueConversation(
+            com.curio.notes.ai.ConversationContext("Original", null, null),
+            emptyList(),
+            "Tell me more"
+        )
+
+        assertEquals("Just the answer.", reply)
+    }
+
+    @Test
+    fun `think traces are stripped from chat replies`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope(
+                    AiJson.encodeToString(
+                        "<think>I should mention everything</think>Real answer here."
+                    )
+                )
+            )
+        )
+
+        val reply = provider().continueConversation(
+            com.curio.notes.ai.ConversationContext("Original", null, null),
+            emptyList(),
+            "Tell me more"
+        )
+
+        assertEquals("Real answer here.", reply)
+    }
+
+    @Test
+    fun `only thinking left fails as invalid response`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope(AiJson.encodeToString("<think>hmm</think>"))
+            )
+        )
+
+        try {
+            provider().continueConversation(
+                com.curio.notes.ai.ConversationContext("Original", null, null),
+                emptyList(),
+                "Tell me more"
+            )
+            fail("Expected InvalidResponse")
+        } catch (e: AiException.InvalidResponse) {
+            // expected: nothing usable remains
+        }
+    }
+
+    @Test
+    fun `stripThinkBlocks keeps untagged text`() {
+        assertEquals("plain", stripThinkBlocks("plain"))
+        assertEquals("a  b", stripThinkBlocks("a <THINK>x\ny</THINK> b"))
+        assertEquals("<think>oops", stripThinkBlocks("<think>oops"))
+    }
 }

@@ -15,6 +15,10 @@ data class NoteEntity(
     val status: String,
     val isArchived: Boolean = false,
     val isPinned: Boolean = false,
+    // Developer-mode diagnostics from the last generation (provider label
+    // like "Ollama · qwen3:8b" and end-to-end millis). Null when unknown.
+    val generationLabel: String? = null,
+    val generationMillis: Long? = null,
     val createdAt: Long,
     val updatedAt: Long
 )

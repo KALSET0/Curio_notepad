@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.ChatMessage
+import com.curio.notes.ai.GenerationTracker
 import com.curio.notes.ai.parseAiResponse
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
@@ -14,6 +15,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -21,7 +23,8 @@ import kotlinx.coroutines.launch
 class NoteDetailViewModel(
     private val repository: NoteRepository,
     private val processNoteUseCase: ProcessNoteUseCase,
-    private val noteId: Long
+    private val noteId: Long,
+    tracker: GenerationTracker? = null
 ) : ViewModel() {
     val note: StateFlow<Note?> = repository.observeNote(noteId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -33,6 +36,9 @@ class NoteDetailViewModel(
 
     val conversation: StateFlow<List<ChatMessage>> = repository.observeConversation(noteId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val developerMode: StateFlow<Boolean> = (tracker?.developerMode ?: flowOf(false))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private val _operationError = MutableStateFlow<String?>(null)
     val operationError: StateFlow<String?> = _operationError
@@ -108,12 +114,13 @@ class NoteDetailViewModel(
         fun factory(
             repository: NoteRepository,
             processNoteUseCase: ProcessNoteUseCase,
-            noteId: Long
+            noteId: Long,
+            tracker: GenerationTracker? = null
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    NoteDetailViewModel(repository, processNoteUseCase, noteId) as T
+                    NoteDetailViewModel(repository, processNoteUseCase, noteId, tracker) as T
             }
     }
 }

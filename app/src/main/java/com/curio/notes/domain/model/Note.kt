@@ -12,6 +12,9 @@ data class Note(
     val status: NoteStatus = NoteStatus.PENDING,
     val isArchived: Boolean = false,
     val isPinned: Boolean = false,
+    // Developer-mode diagnostics from the last generation. Null when unknown.
+    val generationLabel: String? = null,
+    val generationMillis: Long? = null,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L
 )

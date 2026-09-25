@@ -57,6 +57,7 @@ import com.curio.notes.R
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
+import com.curio.notes.ai.formatGenerationDuration
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.ui.components.AiResponseCard
@@ -92,7 +93,8 @@ fun NoteDetailScreen(
             factory = NoteDetailViewModel.factory(
                 container.noteRepository,
                 container.processNoteUseCase,
-                noteId
+                noteId,
+                container.generationTracker
             )
         )
     }
@@ -101,6 +103,7 @@ fun NoteDetailScreen(
     val aiResponse by viewModel.aiResponse.collectAsStateWithLifecycle()
     val conversation by viewModel.conversation.collectAsStateWithLifecycle()
     val operationError by viewModel.operationError.collectAsStateWithLifecycle()
+    val developerMode by viewModel.developerMode.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val language = appAiLanguage()
 
@@ -269,6 +272,7 @@ fun NoteDetailScreen(
                     aiResponse = aiResponse,
                     conversation = conversation,
                     operationError = operationError,
+                    developerMode = developerMode,
                     title = title,
                     onTitleChange = { title = it },
                     body = body,
@@ -327,6 +331,7 @@ private fun NoteDetailContent(
     aiResponse: AIResponse?,
     conversation: List<ChatMessage>,
     operationError: String?,
+    developerMode: Boolean,
     title: String,
     onTitleChange: (String) -> Unit,
     body: String,
@@ -425,6 +430,14 @@ private fun NoteDetailContent(
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 aiResponse?.let { response ->
                     AiResponseCard(response = response)
+                    if (developerMode && note.generationLabel != null) {
+                        Text(
+                            text = "${note.generationLabel} · " +
+                                formatGenerationDuration(note.generationMillis ?: 0L),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     CurioPrimaryButton(
                         text = stringResource(R.string.continue_ai),
                         onClick = onContinueWithAI

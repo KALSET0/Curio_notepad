@@ -9,6 +9,7 @@ import com.curio.notes.ai.AiException
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
+import com.curio.notes.ai.GenerationTracker
 import com.curio.notes.ai.parseAiResponse
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.repository.NoteRepository
@@ -16,6 +17,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -23,7 +25,9 @@ import kotlinx.coroutines.launch
 class ConversationViewModel(
     private val repository: NoteRepository,
     private val aiProvider: AIProvider,
-    private val noteId: Long
+    private val noteId: Long,
+    // Optional telemetry for developer mode. Null in unit tests.
+    private val tracker: GenerationTracker? = null
 ) : ViewModel() {
     val note: StateFlow<Note?> = repository.observeNote(noteId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -45,6 +49,9 @@ class ConversationViewModel(
 
     val isReady: StateFlow<Boolean> = note
         .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val developerMode: StateFlow<Boolean> = (tracker?.developerMode ?: flowOf(false))
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun send(input: String) {
@@ -77,8 +84,23 @@ class ConversationViewModel(
                 if (appendUser) {
                     repository.appendConversationMessage(noteId, ChatMessage(ChatRole.USER, input))
                 }
-                val reply = aiProvider.continueConversation(context, history, input)
-                repository.appendConversationMessage(noteId, ChatMessage(ChatRole.MODEL, reply))
+                val reply = if (tracker != null) {
+                    tracker.track(noteId) {
+                        aiProvider.continueConversation(context, history, input)
+                    }
+                } else {
+                    aiProvider.continueConversation(context, history, input)
+                }
+                val stats = tracker?.statsFor(noteId)
+                repository.appendConversationMessage(
+                    noteId,
+                    ChatMessage(
+                        role = ChatRole.MODEL,
+                        text = reply,
+                        generationLabel = stats?.label,
+                        generationMillis = stats?.durationMillis
+                    )
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -104,12 +126,13 @@ class ConversationViewModel(
         fun factory(
             repository: NoteRepository,
             aiProvider: AIProvider,
-            noteId: Long
+            noteId: Long,
+            tracker: GenerationTracker? = null
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    ConversationViewModel(repository, aiProvider, noteId) as T
+                    ConversationViewModel(repository, aiProvider, noteId, tracker) as T
             }
     }
 }

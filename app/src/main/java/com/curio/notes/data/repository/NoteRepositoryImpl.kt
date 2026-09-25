@@ -83,6 +83,8 @@ class NoteRepositoryImpl(
                 noteId = noteId,
                 role = message.role.name,
                 text = message.text,
+                generationLabel = message.generationLabel,
+                generationMillis = message.generationMillis,
                 createdAt = System.currentTimeMillis()
             )
         )

@@ -23,5 +23,8 @@ data class ConversationMessageEntity(
     // ChatRole enum name as plain string.
     val role: String,
     val text: String,
+    // Developer-mode diagnostics, set only on MODEL messages.
+    val generationLabel: String? = null,
+    val generationMillis: Long? = null,
     val createdAt: Long
 )

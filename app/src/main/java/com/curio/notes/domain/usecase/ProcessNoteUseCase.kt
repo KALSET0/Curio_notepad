@@ -3,6 +3,7 @@ package com.curio.notes.domain.usecase
 import com.curio.notes.ai.AIProvider
 import com.curio.notes.ai.AiException
 import com.curio.notes.ai.AiJson
+import com.curio.notes.ai.GenerationTracker
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.domain.repository.NoteRepository
 import kotlinx.coroutines.CancellationException
@@ -14,7 +15,10 @@ import kotlinx.serialization.encodeToString
 class ProcessNoteUseCase(
     private val repository: NoteRepository,
     private val aiProvider: AIProvider,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    // Optional telemetry: measures generations for developer mode.
+    // Null in unit tests, always present in production.
+    private val tracker: GenerationTracker? = null
 ) {
     fun enqueue(noteId: Long) {
         scope.launch { process(noteId) }
@@ -30,13 +34,20 @@ class ProcessNoteUseCase(
         if (note.status != NoteStatus.PENDING && note.status != NoteStatus.ERROR) return
         repository.updateNote(note.copy(status = NoteStatus.PROCESSING, errorMessage = null))
         try {
-            val response = aiProvider.classifyAndAnswer(note.originalText)
+            val response = if (tracker != null) {
+                tracker.track(note.id) { aiProvider.classifyAndAnswer(note.originalText) }
+            } else {
+                aiProvider.classifyAndAnswer(note.originalText)
+            }
+            val stats = tracker?.statsFor(note.id)
             repository.updateNote(
                 note.copy(
                     type = response.type,
                     aiResponseJson = AiJson.encodeToString(response),
                     status = NoteStatus.ANSWERED,
-                    errorMessage = null
+                    errorMessage = null,
+                    generationLabel = stats?.label,
+                    generationMillis = stats?.durationMillis
                 )
             )
         } catch (e: Exception) {

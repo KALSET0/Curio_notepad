@@ -40,6 +40,12 @@ import kotlin.coroutines.resumeWithException
 
 const val OLLAMA_DEFAULT_MODEL = "llama3.1"
 
+// Reasoning traces some local models leak (qwen3 <think> blocks) are
+// stripped from user-facing text. Untagged text passes through untouched.
+// (?s) lets . span lines, (?i) matches <THINK> too.
+internal fun stripThinkBlocks(text: String): String =
+    text.replace(Regex("(?si)<think>.*?</think>"), "").trim()
+
 // User-typed server address normalized to the OpenAI-compatible base URL:
 // scheme defaulted to http, trailing slashes trimmed, /v1 ensured.
 // Returns "" when the input cannot be a server address.
@@ -90,7 +96,9 @@ class OllamaAIProvider(
         )
         val text = postText(url, body)
         return try {
-            AiJson.decodeFromString<AIResponse>(extractContent(text)).withVerifiedSources(sources)
+            AiJson.decodeFromString<AIResponse>(
+                stripThinkBlocks(extractContent(text))
+            ).withVerifiedSources(sources)
         } catch (e: SerializationException) {
             throw AiException.InvalidResponse(e)
         } catch (e: IllegalArgumentException) {
@@ -149,7 +157,9 @@ class OllamaAIProvider(
                 maxTokens = OllamaConfig.CHAT_MAX_OUTPUT_TOKENS
             )
         )
-        return postText(url, body)
+        val reply = stripThinkBlocks(extractContent(postText(url, body)))
+        if (reply.isBlank()) throw AiException.InvalidResponse()
+        return reply
     }
 
     // Quick reachability check for the Developer options test button.
@@ -227,7 +237,7 @@ class OllamaAIProvider(
                 responseFormat = OpenRouterResponseFormat("json_object")
             )
         )
-        return parseGatekeeperDecision(extractContent(postText(url, body)))
+        return parseGatekeeperDecision(stripThinkBlocks(extractContent(postText(url, body))))
     }
 
     private fun extractContent(envelope: String): String {

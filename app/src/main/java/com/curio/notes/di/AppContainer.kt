@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.curio.notes.BuildConfig
 import com.curio.notes.ai.AIProvider
+import com.curio.notes.ai.GenerationTracker
 import com.curio.notes.ai.SwitchingAIProvider
 import com.curio.notes.ai.providers.GeminiAIProvider
 import com.curio.notes.ai.providers.MockAIProvider
@@ -14,6 +15,7 @@ import com.curio.notes.data.local.database.CurioDatabase
 import com.curio.notes.data.local.database.MIGRATION_1_2
 import com.curio.notes.data.local.database.MIGRATION_2_3
 import com.curio.notes.data.local.database.MIGRATION_3_4
+import com.curio.notes.data.local.database.MIGRATION_4_5
 import com.curio.notes.data.preferences.SettingsRepositoryImpl
 import com.curio.notes.data.preferences.settingsDataStore
 import com.curio.notes.data.repository.NoteRepositoryImpl
@@ -31,7 +33,7 @@ class AppContainer(context: Context) {
 
     private val database: CurioDatabase by lazy {
         Room.databaseBuilder(appContext, CurioDatabase::class.java, "curio.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
     }
 
@@ -119,6 +121,10 @@ class AppContainer(context: Context) {
     }
 
     val processNoteUseCase: ProcessNoteUseCase by lazy {
-        ProcessNoteUseCase(noteRepository, aiProvider, applicationScope)
+        ProcessNoteUseCase(noteRepository, aiProvider, applicationScope, generationTracker)
+    }
+
+    val generationTracker: GenerationTracker by lazy {
+        GenerationTracker(settingsRepository, applicationScope)
     }
 }

@@ -55,6 +55,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
+import com.curio.notes.ai.formatGenerationDuration
 import com.curio.notes.domain.model.Note
 import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.components.ErrorText
@@ -78,7 +79,8 @@ fun ConversationScreen(
             factory = ConversationViewModel.factory(
                 container.noteRepository,
                 container.aiProvider,
-                noteId
+                noteId,
+                container.generationTracker
             )
         )
     }
@@ -89,6 +91,7 @@ fun ConversationScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val isReady by viewModel.isReady.collectAsStateWithLifecycle()
     val aiResponse by viewModel.aiResponse.collectAsStateWithLifecycle()
+    val developerMode by viewModel.developerMode.collectAsStateWithLifecycle()
     var draft by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val context = LocalContext.current
@@ -146,7 +149,10 @@ fun ConversationScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.md)
             ) {
                 items(messages) { message ->
-                    MessageBubble(message = message)
+                    MessageBubble(
+                        message = message,
+                        showGeneration = developerMode
+                    )
                 }
                 if (isSending) {
                     item {
@@ -301,7 +307,11 @@ private fun ContextHeader(note: Note, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun MessageBubble(message: ChatMessage, modifier: Modifier = Modifier) {
+private fun MessageBubble(
+    message: ChatMessage,
+    modifier: Modifier = Modifier,
+    showGeneration: Boolean = false
+) {
     val isUser = message.role == ChatRole.USER
     val scheme = MaterialTheme.colorScheme
     if (isUser) {
@@ -327,25 +337,36 @@ private fun MessageBubble(message: ChatMessage, modifier: Modifier = Modifier) {
     } else {
         // Model answers read as knowledge, not chat bubbles: accent bar
         // plus plain text, with copy consistently trailing.
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
-        ) {
-            Box(
+        Column(modifier = modifier.fillMaxWidth()) {
+            Row(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(3.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(scheme.primary)
-            )
-            MarkdownText(
-                text = message.text,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
-            )
-            CopyIconButton(text = message.text)
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(3.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(scheme.primary)
+                )
+                MarkdownText(
+                    text = message.text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                CopyIconButton(text = message.text)
+            }
+            if (showGeneration && message.generationLabel != null) {
+                Text(
+                    text = "${message.generationLabel} · " +
+                        formatGenerationDuration(message.generationMillis ?: 0L),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.primary,
+                    modifier = Modifier.padding(top = Spacing.xs)
+                )
+            }
         }
     }
 }

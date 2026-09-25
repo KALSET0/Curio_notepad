@@ -50,7 +50,8 @@ fun CreateNoteScreen(
         viewModel(
             factory = CreateNoteViewModel.factory(
                 container.noteRepository,
-                container.processNoteUseCase
+                container.processNoteUseCase,
+                container.generationTracker
             )
         )
     }
@@ -59,6 +60,8 @@ fun CreateNoteScreen(
     var body by rememberSaveable { mutableStateOf("") }
     var saving by rememberSaveable { mutableStateOf(false) }
     val saveError by viewModel.saveError.collectAsStateWithLifecycle()
+    val developerMode by viewModel.developerMode.collectAsStateWithLifecycle()
+    val providerLabel by viewModel.providerLabel.collectAsStateWithLifecycle()
     LaunchedEffect(saveError) {
         if (saveError != null) saving = false
     }
@@ -124,6 +127,13 @@ fun CreateNoteScreen(
                 ErrorText(
                     text = errorMessageFor(code),
                     modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            if (developerMode) {
+                Text(
+                    text = providerLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
             CurioPrimaryButton(
