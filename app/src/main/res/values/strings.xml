@@ -99,6 +99,7 @@
     <string name="conv_hint">Ask a follow-up</string>
     <string name="cd_send">Send</string>
     <string name="conv_empty_hint">Ask anything about this thought — its context is already included.</string>
+    <string name="conv_history_title">Conversation</string>
 
     <!-- AI response card -->
     <string name="ai_header">AI explanation · %1$s</string>

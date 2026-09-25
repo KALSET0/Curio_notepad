@@ -1,5 +1,6 @@
 package com.curio.notes.testing
 
+import com.curio.notes.ai.ChatMessage
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.domain.repository.NoteRepository
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.map
 
 class FakeNoteRepository : NoteRepository {
     private val notes = MutableStateFlow(mapOf<Long, Note>())
+    private val conversations = MutableStateFlow(mapOf<Long, List<ChatMessage>>())
     private var nextId = 1L
 
     override fun observeNotes(): Flow<List<Note>> =
@@ -58,10 +60,12 @@ class FakeNoteRepository : NoteRepository {
 
     override suspend fun deleteNote(noteId: Long) {
         notes.value -= noteId
+        conversations.value -= noteId
     }
 
     override suspend fun deleteNotes(ids: Set<Long>) {
         notes.value -= ids
+        conversations.value -= ids
     }
 
     override suspend fun setArchived(ids: Set<Long>, archived: Boolean) {
@@ -89,5 +93,16 @@ class FakeNoteRepository : NoteRepository {
                 note
             }
         }
+    }
+
+    override fun observeConversation(noteId: Long): Flow<List<ChatMessage>> =
+        conversations.map { it[noteId].orEmpty() }
+
+    override suspend fun appendConversationMessage(noteId: Long, message: ChatMessage) {
+        conversations.value += noteId to (conversations.value[noteId].orEmpty() + message)
+    }
+
+    override suspend fun clearConversation(noteId: Long) {
+        conversations.value -= noteId
     }
 }

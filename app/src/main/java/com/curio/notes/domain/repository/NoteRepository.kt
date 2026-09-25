@@ -1,5 +1,6 @@
 package com.curio.notes.domain.repository
 
+import com.curio.notes.ai.ChatMessage
 import com.curio.notes.domain.model.Note
 import kotlinx.coroutines.flow.Flow
 
@@ -16,4 +17,7 @@ interface NoteRepository {
     suspend fun setPinned(ids: Set<Long>, pinned: Boolean)
     suspend fun getPendingNoteIds(): List<Long>
     suspend fun resetStuckProcessingNotes()
+    fun observeConversation(noteId: Long): Flow<List<ChatMessage>>
+    suspend fun appendConversationMessage(noteId: Long, message: ChatMessage)
+    suspend fun clearConversation(noteId: Long)
 }

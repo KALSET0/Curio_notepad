@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -47,6 +48,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.ai.AIResponse
+import com.curio.notes.ai.ChatMessage
+import com.curio.notes.ai.ChatRole
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.ui.components.AiResponseCard
@@ -76,6 +79,7 @@ fun NoteDetailScreen(
 ) {
     val note by viewModel.note.collectAsStateWithLifecycle()
     val aiResponse by viewModel.aiResponse.collectAsStateWithLifecycle()
+    val conversation by viewModel.conversation.collectAsStateWithLifecycle()
     val operationError by viewModel.operationError.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -131,6 +135,7 @@ fun NoteDetailScreen(
                 NoteDetailContent(
                     note = current,
                     aiResponse = aiResponse,
+                    conversation = conversation,
                     operationError = operationError,
                     onSave = { title, body -> viewModel.saveChanges(title, body) },
                     onRetry = viewModel::retryProcessing,
@@ -149,6 +154,7 @@ fun NoteDetailScreen(
 private fun NoteDetailContent(
     note: Note,
     aiResponse: AIResponse?,
+    conversation: List<ChatMessage>,
     onSave: (String, String) -> Unit,
     onRetry: () -> Unit,
     onContinueWithAI: () -> Unit,
@@ -238,6 +244,9 @@ private fun NoteDetailContent(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
+        }
+        if (conversation.isNotEmpty()) {
+            ConversationHistory(messages = conversation)
         }
         OutlinedTextField(
             value = title,
@@ -338,5 +347,40 @@ private fun NoteDetailContent(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun ConversationHistory(messages: List<ChatMessage>, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.conv_history_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = scheme.primary
+        )
+        messages.forEach { message ->
+            val isUser = message.role == ChatRole.USER
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+            ) {
+                Surface(
+                    color = if (isUser) scheme.primaryContainer else scheme.surfaceVariant,
+                    contentColor = if (isUser) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(0.9f)
+                ) {
+                    Text(
+                        text = message.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
+        }
     }
 }

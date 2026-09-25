@@ -18,13 +18,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ConversationViewModel(
     private val repository: NoteRepository,
     private val aiProvider: AIProvider,
-    noteId: Long
+    private val noteId: Long
 ) : ViewModel() {
     val note: StateFlow<Note?> = repository.observeNote(noteId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -33,8 +32,10 @@ class ConversationViewModel(
         .map { current -> parseAiResponse(current?.aiResponseJson) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    private val _messages = MutableStateFlow(emptyList<ChatMessage>())
-    val messages: StateFlow<List<ChatMessage>> = _messages
+    // Conversation history is persisted per note: reopening the chat
+    // restores everything the user and the AI already said.
+    val messages: StateFlow<List<ChatMessage>> = repository.observeConversation(noteId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _isSending = MutableStateFlow(false)
     val isSending: StateFlow<Boolean> = _isSending
@@ -50,29 +51,34 @@ class ConversationViewModel(
         val text = input.trim()
         if (text.isBlank() || _isSending.value) return
         if (buildContext() == null) return
-        _messages.update { it + ChatMessage(ChatRole.USER, text) }
-        fetchReply(history = _messages.value.dropLast(1), input = text)
+        // Snapshot history before appending: the provider expects
+        // everything said so far, excluding the new user message.
+        fetchReply(history = messages.value, input = text, appendUser = true)
     }
 
     fun retry() {
-        val current = _messages.value
+        val current = messages.value
         val lastUser = current.lastOrNull()
         if (lastUser?.role != ChatRole.USER || _isSending.value) return
-        fetchReply(history = current.dropLast(1), input = lastUser.text)
+        if (buildContext() == null) return
+        fetchReply(history = current.dropLast(1), input = lastUser.text, appendUser = false)
     }
 
     fun dismissError() {
         _error.value = null
     }
 
-    private fun fetchReply(history: List<ChatMessage>, input: String) {
+    private fun fetchReply(history: List<ChatMessage>, input: String, appendUser: Boolean) {
         val context = buildContext() ?: return
         _isSending.value = true
         _error.value = null
         viewModelScope.launch {
             try {
+                if (appendUser) {
+                    repository.appendConversationMessage(noteId, ChatMessage(ChatRole.USER, input))
+                }
                 val reply = aiProvider.continueConversation(context, history, input)
-                _messages.update { it + ChatMessage(ChatRole.MODEL, reply) }
+                repository.appendConversationMessage(noteId, ChatMessage(ChatRole.MODEL, reply))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

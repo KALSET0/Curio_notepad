@@ -1,6 +1,9 @@
 package com.curio.notes.data.repository
 
 import com.curio.notes.data.local.entity.NoteEntity
+import com.curio.notes.data.local.entity.ConversationMessageEntity
+import com.curio.notes.ai.ChatMessage
+import com.curio.notes.ai.ChatRole
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.domain.model.NoteType
@@ -31,4 +34,9 @@ internal fun Note.toEntity(): NoteEntity = NoteEntity(
     isPinned = isPinned,
     createdAt = createdAt,
     updatedAt = updatedAt
+)
+
+internal fun ConversationMessageEntity.toChatMessage(): ChatMessage = ChatMessage(
+    role = runCatching { ChatRole.valueOf(role) }.getOrDefault(ChatRole.USER),
+    text = text
 )

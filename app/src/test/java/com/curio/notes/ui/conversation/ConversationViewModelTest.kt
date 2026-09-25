@@ -45,10 +45,8 @@ class ConversationViewModelTest {
         val id = repository.createNote("Title", "Define photosynthesis")
         val fake = FakeConversationAI()
         val viewModel = ConversationViewModel(repository, fake, id)
-        backgroundScope.launch {
-            viewModel.note.collect {}
-            viewModel.messages.collect {}
-        }
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.messages.collect {} }
         advanceUntilIdle()
 
         viewModel.send("Tell me more")
@@ -72,10 +70,8 @@ class ConversationViewModelTest {
         val id = repository.createNote("Title", "Define photosynthesis")
         val fake = FakeConversationAI()
         val viewModel = ConversationViewModel(repository, fake, id)
-        backgroundScope.launch {
-            viewModel.note.collect {}
-            viewModel.messages.collect {}
-        }
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.messages.collect {} }
         advanceUntilIdle()
 
         viewModel.send("First")
@@ -93,10 +89,8 @@ class ConversationViewModelTest {
         val id = repository.createNote("Title", "Define photosynthesis")
         val fake = FakeConversationAI(failure = IOException("boom"))
         val viewModel = ConversationViewModel(repository, fake, id)
-        backgroundScope.launch {
-            viewModel.note.collect {}
-            viewModel.messages.collect {}
-        }
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.messages.collect {} }
         advanceUntilIdle()
 
         viewModel.send("Tell me more")
@@ -118,10 +112,8 @@ class ConversationViewModelTest {
         val id = repository.createNote("Title", "Define photosynthesis")
         val fake = FakeConversationAI()
         val viewModel = ConversationViewModel(repository, fake, id)
-        backgroundScope.launch {
-            viewModel.note.collect {}
-            viewModel.messages.collect {}
-        }
+        backgroundScope.launch { viewModel.note.collect {} }
+        backgroundScope.launch { viewModel.messages.collect {} }
         advanceUntilIdle()
 
         viewModel.send("   ")
@@ -151,6 +143,32 @@ class ConversationViewModelTest {
         assertEquals(NoteType.QUESTION, viewModel.aiResponse.value?.type)
     }
 
+    @Test
+    fun `messages persist across view model instances`() = runTest {
+        val repository = FakeNoteRepository()
+        val id = repository.createNote("Title", "Define photosynthesis")
+        val first = ConversationViewModel(repository, FakeConversationAI(), id)
+        backgroundScope.launch { first.note.collect {} }
+        backgroundScope.launch { first.messages.collect {} }
+        advanceUntilIdle()
+
+        first.send("Tell me more")
+        advanceUntilIdle()
+        assertEquals(2, first.messages.value.size)
+
+        val second = ConversationViewModel(repository, FakeConversationAI(), id)
+        backgroundScope.launch { second.note.collect {} }
+        backgroundScope.launch { second.messages.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                ChatMessage(ChatRole.USER, "Tell me more"),
+                ChatMessage(ChatRole.MODEL, "Reply to: Tell me more")
+            ),
+            second.messages.value
+        )
+    }
     private class FakeConversationAI(
         var failure: IOException? = null,
         var calls: Int = 0,

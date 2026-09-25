@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.curio.notes.ai.AIResponse
+import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.parseAiResponse
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
@@ -29,6 +30,9 @@ class NoteDetailViewModel(
     val aiResponse: StateFlow<AIResponse?> = note
         .map { current -> parseAiResponse(current?.aiResponseJson) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val conversation: StateFlow<List<ChatMessage>> = repository.observeConversation(noteId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _operationError = MutableStateFlow<String?>(null)
     val operationError: StateFlow<String?> = _operationError
