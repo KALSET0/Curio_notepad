@@ -32,6 +32,8 @@ import com.curio.notes.R
 import com.curio.notes.domain.model.AiProviderChoice
 import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
+import com.curio.notes.ui.components.ErrorText
+import com.curio.notes.ui.components.SectionHeader
 import com.curio.notes.ui.util.rememberAppContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,7 +80,7 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            SettingsSectionTitle(stringResource(R.string.section_provider))
+            SectionHeader(stringResource(R.string.section_provider))
             RadioOption(
                 selected = provider == AiProviderChoice.MOCK,
                 title = stringResource(R.string.provider_mock),
@@ -106,23 +108,19 @@ fun SettingsScreen(
                 onSelect = { viewModel.setAiProvider(AiProviderChoice.OPENROUTER) }
             )
             if (provider == AiProviderChoice.GEMINI && !viewModel.isGeminiConfigured) {
-                Text(
+                ErrorText(
                     text = stringResource(R.string.provider_gemini_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
             if (provider == AiProviderChoice.OPENROUTER && !viewModel.isOpenRouterConfigured) {
-                Text(
+                ErrorText(
                     text = stringResource(R.string.provider_openrouter_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
 
-            SettingsSectionTitle(stringResource(R.string.section_appearance))
+            SectionHeader(stringResource(R.string.section_appearance))
             RadioOption(
                 selected = theme == AppTheme.SYSTEM,
                 title = stringResource(R.string.theme_system),
@@ -142,7 +140,7 @@ fun SettingsScreen(
                 onSelect = { viewModel.setTheme(AppTheme.DARK) }
             )
 
-            SettingsSectionTitle(stringResource(R.string.section_websearch))
+            SectionHeader(stringResource(R.string.section_websearch))
             SwitchOption(
                 checked = webSearchEnabled,
                 title = stringResource(R.string.websearch_title),
@@ -150,7 +148,7 @@ fun SettingsScreen(
                 onCheckedChange = viewModel::setWebSearchEnabled
             )
 
-            SettingsSectionTitle(stringResource(R.string.section_language))
+            SectionHeader(stringResource(R.string.section_language))
             RadioOption(
                 selected = language == AppLanguage.SYSTEM,
                 title = stringResource(R.string.lang_system),
@@ -170,7 +168,7 @@ fun SettingsScreen(
                 onSelect = { viewModel.setLanguage(AppLanguage.SPANISH) }
             )
 
-            SettingsSectionTitle(stringResource(R.string.section_about))
+            SectionHeader(stringResource(R.string.section_about))
             Text(
                 text = stringResource(R.string.about_version, viewModel.appVersion),
                 style = MaterialTheme.typography.bodyLarge
@@ -186,16 +184,6 @@ fun SettingsScreen(
             )
         }
     }
-}
-
-@Composable
-private fun SettingsSectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
-    )
 }
 
 @Composable

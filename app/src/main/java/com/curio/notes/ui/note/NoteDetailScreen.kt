@@ -17,21 +17,15 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Unarchive
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,6 +50,13 @@ import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.ui.components.AiResponseCard
 import com.curio.notes.ui.components.CopyIconButton
+import com.curio.notes.ui.components.CurioPrimaryButton
+import com.curio.notes.ui.components.CurioSecondaryButton
+import com.curio.notes.ui.components.DeleteDialog
+import com.curio.notes.ui.components.ErrorText
+import com.curio.notes.ui.components.ProcessingIndicator
+import com.curio.notes.ui.components.SectionHeader
+import com.curio.notes.ui.components.ShareButton
 import com.curio.notes.ui.components.StatusChip
 import com.curio.notes.ui.components.TypeChip
 import com.curio.notes.ui.components.appAiLanguage
@@ -112,8 +112,8 @@ fun NoteDetailScreen(
                 },
                 actions = {
                     val current = note
-                    IconButton(
-                        onClick = {
+                    ShareButton(
+                        onShare = {
                             current?.let {
                                 shareText(
                                     context,
@@ -123,12 +123,7 @@ fun NoteDetailScreen(
                             }
                         },
                         enabled = current != null
-                    ) {
-                        Icon(
-                            Icons.Default.Share,
-                            contentDescription = stringResource(R.string.cd_share)
-                        )
-                    }
+                    )
                 }
             )
         }
@@ -155,9 +150,10 @@ fun NoteDetailScreen(
                             text = stringResource(R.string.note_gone),
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        Button(onClick = onBack) {
-                            Text(stringResource(R.string.cd_back))
-                        }
+                        CurioPrimaryButton(
+                            text = stringResource(R.string.cd_back),
+                            onClick = onBack
+                        )
                     }
                 } else {
                     Text(
@@ -217,28 +213,18 @@ private fun NoteDetailContent(
     ) {
         when (note.status) {
             NoteStatus.PROCESSING -> {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                Text(
-                    text = stringResource(R.string.detail_processing),
-                    style = MaterialTheme.typography.bodySmall
-                )
+                ProcessingIndicator(text = stringResource(R.string.detail_processing))
             }
             NoteStatus.ERROR -> {
-                Text(
+                ErrorText(
                     text = note.errorMessage?.let { errorMessageFor(it) }
-                        ?: stringResource(R.string.error_unknown),
-                    style = MaterialTheme.typography.bodyMedium
+                        ?: stringResource(R.string.error_unknown)
                 )
-                OutlinedButton(
+                CurioSecondaryButton(
+                    text = stringResource(R.string.action_retry),
                     onClick = onRetry,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null)
-                    Text(
-                        stringResource(R.string.action_retry),
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
+                    icon = Icons.Default.Refresh
+                )
             }
             NoteStatus.PENDING, NoteStatus.ANSWERED -> {}
         }
@@ -264,24 +250,15 @@ private fun NoteDetailContent(
             if (aiResponse != null) {
                 AiResponseCard(response = aiResponse)
             } else {
-                Text(
-                    text = stringResource(R.string.ai_unavailable),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+                ErrorText(text = stringResource(R.string.ai_unavailable))
             }
         }
         if (note.status == NoteStatus.ANSWERED && aiResponse != null) {
-            OutlinedButton(
+            CurioSecondaryButton(
+                text = stringResource(R.string.continue_ai),
                 onClick = onContinueWithAI,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
-                Text(
-                    stringResource(R.string.continue_ai),
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+                icon = Icons.AutoMirrored.Filled.ArrowForward
+            )
         }
         if (conversation.isNotEmpty()) {
             ConversationHistory(messages = conversation)
@@ -306,95 +283,52 @@ private fun NoteDetailContent(
             modifier = Modifier.fillMaxWidth()
         )
         operationError?.let { code ->
-            Text(
-                text = errorMessageFor(code),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
+            ErrorText(text = errorMessageFor(code))
         }
-        Button(
+        CurioPrimaryButton(
+            text = stringResource(R.string.action_save_changes),
             onClick = { onSave(title.trim(), body.trim()) },
-            enabled = changed && body.isNotBlank(),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(R.string.action_save_changes))
-        }
+            enabled = changed && body.isNotBlank()
+        )
         if (note.status == NoteStatus.ANSWERED) {
-            OutlinedButton(
+            CurioSecondaryButton(
+                text = stringResource(R.string.action_reanalyze),
                 onClick = onReanalyze,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
-                Text(
-                    stringResource(R.string.action_reanalyze),
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+                icon = Icons.Default.Refresh
+            )
         }
-        OutlinedButton(
+        CurioSecondaryButton(
+            text = stringResource(R.string.action_delete),
             onClick = { showDeleteDialog = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Delete, contentDescription = null)
-            Text(
-                stringResource(R.string.action_delete),
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-        OutlinedButton(
+            icon = Icons.Default.Delete
+        )
+        CurioSecondaryButton(
+            text = stringResource(
+                if (note.isArchived) {
+                    R.string.action_unarchive
+                } else {
+                    R.string.action_archive
+                }
+            ),
             onClick = onToggleArchive,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                if (note.isArchived) Icons.Default.Unarchive else Icons.Default.Archive,
-                contentDescription = null
-            )
-            Text(
-                stringResource(
-                    if (note.isArchived) {
-                        R.string.action_unarchive
-                    } else {
-                        R.string.action_archive
-                    }
-                ),
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-        OutlinedButton(
+            icon = if (note.isArchived) Icons.Default.Unarchive else Icons.Default.Archive
+        )
+        CurioSecondaryButton(
+            text = stringResource(
+                if (note.isPinned) R.string.action_unpin else R.string.action_pin
+            ),
             onClick = onTogglePin,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.PushPin, contentDescription = null)
-            Text(
-                stringResource(
-                    if (note.isPinned) R.string.action_unpin else R.string.action_pin
-                ),
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
+            icon = Icons.Default.PushPin
+        )
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = {
-                Text(pluralStringResource(R.plurals.delete_notes_title, 1))
-            },
-            text = { Text(stringResource(R.string.delete_notes_body)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        onDelete()
-                    }
-                ) {
-                    Text(stringResource(R.string.action_delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.action_keep))
-                }
+        DeleteDialog(
+            count = 1,
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                showDeleteDialog = false
+                onDelete()
             }
         )
     }
@@ -407,11 +341,7 @@ private fun ConversationHistory(messages: List<ChatMessage>, modifier: Modifier 
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            text = stringResource(R.string.conv_history_title),
-            style = MaterialTheme.typography.titleSmall,
-            color = scheme.primary
-        )
+        SectionHeader(text = stringResource(R.string.conv_history_title))
         messages.forEach { message ->
             val isUser = message.role == ChatRole.USER
             Row(

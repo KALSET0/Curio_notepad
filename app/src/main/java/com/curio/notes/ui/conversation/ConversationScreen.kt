@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -48,6 +47,8 @@ import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.domain.model.Note
 import com.curio.notes.ui.components.CopyIconButton
+import com.curio.notes.ui.components.ErrorText
+import com.curio.notes.ui.components.ShareButton
 import com.curio.notes.ui.components.appAiLanguage
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.formatNoteExport
@@ -108,8 +109,8 @@ fun ConversationScreen(
                 },
                 actions = {
                     val current = note
-                    IconButton(
-                        onClick = {
+                    ShareButton(
+                        onShare = {
                             current?.let {
                                 shareText(
                                     context,
@@ -119,12 +120,7 @@ fun ConversationScreen(
                             }
                         },
                         enabled = current != null
-                    ) {
-                        Icon(
-                            Icons.Default.Share,
-                            contentDescription = stringResource(R.string.cd_share)
-                        )
-                    }
+                    )
                 }
             )
         }
@@ -172,10 +168,8 @@ fun ConversationScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
+                    ErrorText(
                         text = errorMessageFor(code),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f)
                     )
                     TextButton(onClick = viewModel::retry) {

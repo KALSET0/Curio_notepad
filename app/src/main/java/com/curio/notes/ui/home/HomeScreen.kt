@@ -17,9 +17,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Unarchive
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -30,7 +28,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,8 +46,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
+import com.curio.notes.ui.components.DeleteDialog
 import com.curio.notes.ui.components.NoteCard
+import com.curio.notes.ui.components.ShareButton
 import com.curio.notes.ui.components.appAiLanguage
+import com.curio.notes.ui.components.ErrorText
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.rememberAppContainer
 import com.curio.notes.ui.util.shareText
@@ -105,7 +105,7 @@ fun HomeScreen(
                         }
                     },
                     actions = {
-                        IconButton(onClick = {
+                        ShareButton(onShare = {
                             scope.launch {
                                 val text = viewModel.exportSelected(language)
                                 if (text.isNotBlank()) {
@@ -116,12 +116,7 @@ fun HomeScreen(
                                     )
                                 }
                             }
-                        }) {
-                            Icon(
-                                Icons.Default.Share,
-                                contentDescription = stringResource(R.string.cd_share)
-                            )
-                        }
+                        })
                         if (showArchived) {
                             IconButton(onClick = { viewModel.unarchiveSelected() }) {
                                 Icon(
@@ -216,10 +211,8 @@ fun HomeScreen(
                 )
             }
             selectionError?.let { code ->
-                Text(
+                ErrorText(
                     text = errorMessageFor(code),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
@@ -281,30 +274,12 @@ fun HomeScreen(
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = {
-                Text(
-                    pluralStringResource(
-                        R.plurals.delete_notes_title,
-                        selectedIds.size,
-                        selectedIds.size
-                    )
-                )
-            },
-            text = { Text(stringResource(R.string.delete_notes_body)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    viewModel.deleteSelected {}
-                }) {
-                    Text(stringResource(R.string.action_delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.action_keep))
-                }
+        DeleteDialog(
+            count = selectedIds.size,
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.deleteSelected {}
             }
         )
     }

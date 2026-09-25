@@ -302,16 +302,6 @@ private fun AiSectionContent(section: AiSection) {
 }
 
 @Composable
-private fun SectionHeading(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = modifier
-    )
-}
-
-@Composable
 private fun SectionHeadingRow(
     heading: String,
     copyText: String,
@@ -321,7 +311,7 @@ private fun SectionHeadingRow(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SectionHeading(heading, modifier = Modifier.weight(1f))
+        SectionHeader(heading, modifier = Modifier.weight(1f))
         CopyIconButton(text = copyText)
     }
 }

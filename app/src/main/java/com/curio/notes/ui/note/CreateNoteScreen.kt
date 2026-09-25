@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +34,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.ui.components.CopyIconButton
+import com.curio.notes.ui.components.CurioPrimaryButton
+import com.curio.notes.ui.components.ErrorText
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.rememberAppContainer
 
@@ -117,30 +118,21 @@ fun CreateNoteScreen(
                     Text(stringResource(R.string.create_supporting))
                 }
             )
-            Button(
+            CurioPrimaryButton(
+                text = if (saving) {
+                    stringResource(R.string.action_saving)
+                } else {
+                    stringResource(R.string.action_save)
+                },
                 onClick = {
                     saving = true
                     viewModel.saveNote(title, body, onBack)
                 },
                 enabled = body.isNotBlank() && !saving,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp)
-            ) {
-                Text(
-                    if (saving) {
-                        stringResource(R.string.action_saving)
-                    } else {
-                        stringResource(R.string.action_save)
-                    }
-                )
-            }
+                modifier = Modifier.padding(top = 12.dp)
+            )
             saveError?.let { code ->
-                Text(
-                    text = errorMessageFor(code),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                ErrorText(text = errorMessageFor(code))
             }
             Text(
                 text = stringResource(R.string.create_tagline),
