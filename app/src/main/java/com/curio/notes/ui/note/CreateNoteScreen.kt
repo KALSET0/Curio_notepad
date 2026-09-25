@@ -1,10 +1,17 @@
 package com.curio.notes.ui.note
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,9 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,10 +76,14 @@ fun CreateNoteScreen(
     }
 
     // Fast capture: focus the thought field and raise the keyboard immediately.
-    val focusRequester = remember { FocusRequester() }
+    // Once the thought field is focused, the blank title folds away so the
+    // screen becomes a focused writing environment (it returns if the title
+    // has text or focus leaves).
+    val bodyFocus = remember { FocusRequester() }
+    var bodyFocused by remember { mutableStateOf(false) }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        bodyFocus.requestFocus()
         keyboard?.show()
     }
 
@@ -96,16 +109,32 @@ fun CreateNoteScreen(
                 .imePadding()
                 .padding(horizontal = 16.dp)
         ) {
-            TextField(
-                value = title,
-                onValueChange = { title = it },
-                placeholder = { Text(stringResource(R.string.create_title_label)) },
-                textStyle = MaterialTheme.typography.titleLarge,
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                colors = borderlessFieldColors(),
-                modifier = Modifier.fillMaxWidth()
-            )
+            // The blank title folds away only once there is thought text to
+            // focus on, so the title stays reachable until you start typing.
+            AnimatedVisibility(
+                visible = !bodyFocused || title.isNotBlank() || body.isBlank(),
+                enter = fadeIn(animationSpec = tween(250)) +
+                    expandVertically(animationSpec = tween(250)),
+                exit = fadeOut(animationSpec = tween(200)) +
+                    shrinkVertically(animationSpec = tween(200))
+            ) {
+                TextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    placeholder = { Text(stringResource(R.string.create_title_label)) },
+                    textStyle = MaterialTheme.typography.titleLarge,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { bodyFocus.requestFocus() }
+                    ),
+                    colors = borderlessFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             TextField(
                 value = body,
                 onValueChange = { body = it },
@@ -116,7 +145,8 @@ fun CreateNoteScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .focusRequester(focusRequester),
+                    .focusRequester(bodyFocus)
+                    .onFocusChanged { bodyFocused = it.isFocused },
                 trailingIcon = {
                     if (body.isNotBlank()) {
                         CopyIconButton(text = body)
