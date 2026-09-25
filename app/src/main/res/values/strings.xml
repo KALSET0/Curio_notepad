@@ -52,6 +52,8 @@
     <!-- Note detail -->
     <string name="detail_title">Note</string>
     <string name="detail_title_with_name">Note - %1$s</string>
+    <string name="thought_header">Your thought</string>
+    <string name="cd_more">More options</string>
     <string name="detail_processing">Understanding this thought…</string>
     <string name="action_retry">Retry</string>
     <string name="not_classified">Not classified yet</string>

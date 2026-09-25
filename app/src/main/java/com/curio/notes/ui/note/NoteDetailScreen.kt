@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -14,11 +15,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +65,7 @@ import com.curio.notes.ui.components.ShareButton
 import com.curio.notes.ui.components.StatusChip
 import com.curio.notes.ui.components.TypeChip
 import com.curio.notes.ui.components.appAiLanguage
+import com.curio.notes.ui.theme.Spacing
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.appLocale
 import com.curio.notes.ui.util.formatNoteExport
@@ -91,49 +97,20 @@ fun NoteDetailScreen(
     val context = LocalContext.current
     val language = appAiLanguage()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = note?.let { stringResource(R.string.detail_title_with_name, it.title) }
-                            ?: stringResource(R.string.detail_title),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back)
-                        )
-                    }
-                },
-                actions = {
-                    val current = note
-                    ShareButton(
-                        onShare = {
-                            current?.let {
-                                shareText(
-                                    context,
-                                    formatNoteExport(it, aiResponse, conversation, language),
-                                    context.getString(R.string.share_chooser_title)
-                                )
-                            }
-                        },
-                        enabled = current != null
-                    )
-                }
-            )
-        }
-    ) { padding ->
-        val current = note
-        var sawNote by rememberSaveable { mutableStateOf(false) }
-        LaunchedEffect(current) {
-            if (current != null) sawNote = true
-        }
-        if (current == null) {
+    val current = note
+    var sawNote by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(current) {
+        if (current != null) sawNote = true
+    }
+    if (current == null) {
+        Scaffold(
+            topBar = {
+                NoteDetailTopBar(
+                    title = stringResource(R.string.detail_title),
+                    onBack = onBack
+                )
+            }
+        ) { padding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -162,25 +139,179 @@ fun NoteDetailScreen(
                     )
                 }
             }
-        } else {
-            key(current.id) {
+        }
+    } else {
+        key(current.id) {
+            var title by rememberSaveable { mutableStateOf(current.title) }
+            var body by rememberSaveable { mutableStateOf(current.originalText) }
+            var showMenu by rememberSaveable { mutableStateOf(false) }
+            var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+            val changed = title != current.title || body != current.originalText
+            Scaffold(
+                topBar = {
+                    NoteDetailTopBar(
+                        title = stringResource(R.string.detail_title_with_name, current.title),
+                        onBack = onBack,
+                        actions = {
+                            ShareButton(
+                                onShare = {
+                                    shareText(
+                                        context,
+                                        formatNoteExport(current, aiResponse, conversation, language),
+                                        context.getString(R.string.share_chooser_title)
+                                    )
+                                }
+                            )
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.cd_more)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_save_changes)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Check, contentDescription = null)
+                                    },
+                                    enabled = changed && body.isNotBlank(),
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.saveChanges(title.trim(), body.trim())
+                                    }
+                                )
+                                if (current.status == NoteStatus.ANSWERED) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_reanalyze)) },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Refresh, contentDescription = null)
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            viewModel.reanalyze()
+                                        }
+                                    )
+                                }
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            stringResource(
+                                                if (current.isArchived) {
+                                                    R.string.action_unarchive
+                                                } else {
+                                                    R.string.action_archive
+                                                }
+                                            )
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            if (current.isArchived) {
+                                                Icons.Default.Unarchive
+                                            } else {
+                                                Icons.Default.Archive
+                                            },
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.toggleArchive()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            stringResource(
+                                                if (current.isPinned) {
+                                                    R.string.action_unpin
+                                                } else {
+                                                    R.string.action_pin
+                                                }
+                                            )
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.PushPin, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.togglePin()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_delete)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Delete, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        showDeleteDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
                 NoteDetailContent(
                     note = current,
                     aiResponse = aiResponse,
                     conversation = conversation,
                     operationError = operationError,
-                    onSave = { title, body -> viewModel.saveChanges(title, body) },
+                    title = title,
+                    onTitleChange = { title = it },
+                    body = body,
+                    onBodyChange = { body = it },
                     onRetry = viewModel::retryProcessing,
-                    onReanalyze = viewModel::reanalyze,
                     onContinueWithAI = onContinueWithAI,
-                    onToggleArchive = viewModel::toggleArchive,
-                    onTogglePin = viewModel::togglePin,
-                    onDelete = { viewModel.deleteNote(onBack) },
                     modifier = Modifier.padding(padding)
+                )
+            }
+            if (showDeleteDialog) {
+                DeleteDialog(
+                    count = 1,
+                    onDismiss = { showDeleteDialog = false },
+                    onConfirm = {
+                        showDeleteDialog = false
+                        viewModel.deleteNote(onBack)
+                    }
                 )
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NoteDetailTopBar(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {}
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.cd_back)
+                )
+            }
+        },
+        actions = actions,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -188,20 +319,15 @@ private fun NoteDetailContent(
     note: Note,
     aiResponse: AIResponse?,
     conversation: List<ChatMessage>,
-    onSave: (String, String) -> Unit,
-    onRetry: () -> Unit,
-    onReanalyze: () -> Unit,
-    onContinueWithAI: () -> Unit,
-    onToggleArchive: () -> Unit,
-    onTogglePin: () -> Unit,
-    onDelete: () -> Unit,
     operationError: String?,
+    title: String,
+    onTitleChange: (String) -> Unit,
+    body: String,
+    onBodyChange: (String) -> Unit,
+    onRetry: () -> Unit,
+    onContinueWithAI: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var title by rememberSaveable { mutableStateOf(note.title) }
-    var body by rememberSaveable { mutableStateOf(note.originalText) }
-    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    val changed = title != note.title || body != note.originalText
 
     Column(
         modifier = modifier
@@ -246,6 +372,39 @@ private fun NoteDetailContent(
             text = stringResource(R.string.detail_created, formatTimestamp(note.createdAt, appLocale())),
             style = MaterialTheme.typography.labelSmall
         )
+        SectionHeader(text = stringResource(R.string.thought_header))
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Column(
+                modifier = Modifier.padding(Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = onTitleChange,
+                    label = { Text(stringResource(R.string.detail_title_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = body,
+                    onValueChange = onBodyChange,
+                    label = { Text(stringResource(R.string.detail_original_label)) },
+                    minLines = 5,
+                    trailingIcon = {
+                        if (body.isNotBlank()) {
+                            CopyIconButton(text = body)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+        operationError?.let { code ->
+            ErrorText(text = errorMessageFor(code))
+        }
         if (note.status == NoteStatus.ANSWERED) {
             if (aiResponse != null) {
                 AiResponseCard(response = aiResponse)
@@ -254,83 +413,14 @@ private fun NoteDetailContent(
             }
         }
         if (note.status == NoteStatus.ANSWERED && aiResponse != null) {
-            CurioSecondaryButton(
+            CurioPrimaryButton(
                 text = stringResource(R.string.continue_ai),
-                onClick = onContinueWithAI,
-                icon = Icons.AutoMirrored.Filled.ArrowForward
+                onClick = onContinueWithAI
             )
         }
         if (conversation.isNotEmpty()) {
             ConversationHistory(messages = conversation)
         }
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text(stringResource(R.string.detail_title_label)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = body,
-            onValueChange = { body = it },
-            label = { Text(stringResource(R.string.detail_original_label)) },
-            minLines = 5,
-            trailingIcon = {
-                if (body.isNotBlank()) {
-                    CopyIconButton(text = body)
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-        operationError?.let { code ->
-            ErrorText(text = errorMessageFor(code))
-        }
-        CurioPrimaryButton(
-            text = stringResource(R.string.action_save_changes),
-            onClick = { onSave(title.trim(), body.trim()) },
-            enabled = changed && body.isNotBlank()
-        )
-        if (note.status == NoteStatus.ANSWERED) {
-            CurioSecondaryButton(
-                text = stringResource(R.string.action_reanalyze),
-                onClick = onReanalyze,
-                icon = Icons.Default.Refresh
-            )
-        }
-        CurioSecondaryButton(
-            text = stringResource(R.string.action_delete),
-            onClick = { showDeleteDialog = true },
-            icon = Icons.Default.Delete
-        )
-        CurioSecondaryButton(
-            text = stringResource(
-                if (note.isArchived) {
-                    R.string.action_unarchive
-                } else {
-                    R.string.action_archive
-                }
-            ),
-            onClick = onToggleArchive,
-            icon = if (note.isArchived) Icons.Default.Unarchive else Icons.Default.Archive
-        )
-        CurioSecondaryButton(
-            text = stringResource(
-                if (note.isPinned) R.string.action_unpin else R.string.action_pin
-            ),
-            onClick = onTogglePin,
-            icon = Icons.Default.PushPin
-        )
-    }
-
-    if (showDeleteDialog) {
-        DeleteDialog(
-            count = 1,
-            onDismiss = { showDeleteDialog = false },
-            onConfirm = {
-                showDeleteDialog = false
-                onDelete()
-            }
-        )
     }
 }
 

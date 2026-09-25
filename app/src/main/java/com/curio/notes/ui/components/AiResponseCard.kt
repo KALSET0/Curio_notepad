@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -18,12 +18,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
 import com.curio.notes.R
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.AiSource
 import com.curio.notes.domain.model.NoteType
+import com.curio.notes.ui.theme.Spacing
 import com.curio.notes.ui.util.label
 
 sealed interface AiSection {
@@ -152,28 +152,32 @@ private fun headingsEsFor(type: NoteType): Headings = when (type) {
 @Composable
 fun AiResponseCard(response: AIResponse, modifier: Modifier = Modifier) {
     val language = appAiLanguage()
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(R.string.ai_header, response.type.label()),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
+    val sections = sectionsFor(response, language)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.ai_header, response.type.label()),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f)
+            )
+            CopyIconButton(
+                text = formatAiResponse(
+                    response,
+                    includeFollowUpQuestions = false,
+                    language = language
                 )
-                CopyIconButton(
-                    text = formatAiResponse(
-                        response,
-                        includeFollowUpQuestions = false,
-                        language = language
-                    )
+            )
+        }
+        sections.forEachIndexed { index, section ->
+            if (index > 0) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
             }
-            sectionsFor(response, language).forEach { section ->
-                AiSectionContent(section)
-            }
+            AiSectionContent(section)
         }
     }
 }
@@ -189,7 +193,7 @@ fun appAiLanguage(): AiLanguage {
 private fun AiSectionContent(section: AiSection) {
     when (section) {
         is AiSection.Paragraph -> {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeadingRow(
                     heading = section.heading,
                     copyText = "${section.heading}\n${section.body}"
@@ -198,7 +202,7 @@ private fun AiSectionContent(section: AiSection) {
             }
         }
         is AiSection.Bullets -> {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeadingRow(
                     heading = section.heading,
                     copyText = buildString {
@@ -207,7 +211,7 @@ private fun AiSectionContent(section: AiSection) {
                     }.trim()
                 )
                 section.items.forEach { item ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Text(text = "•", style = MaterialTheme.typography.bodyLarge)
                         Text(
                             text = item,
@@ -219,14 +223,14 @@ private fun AiSectionContent(section: AiSection) {
             }
         }
         is AiSection.Chips -> {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeadingRow(
                     heading = section.heading,
                     copyText = "${section.heading}\n${section.topics.joinToString(", ")}"
                 )
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
                     section.topics.forEach { topic ->
                         Surface(
@@ -237,7 +241,7 @@ private fun AiSectionContent(section: AiSection) {
                             Text(
                                 text = topic,
                                 style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs)
                             )
                         }
                     }
@@ -247,7 +251,7 @@ private fun AiSectionContent(section: AiSection) {
         is AiSection.Questions -> {
             // Display-only for now; tapping a question to continue the
             // conversation arrives with "Continue with AI" (Phase 10).
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeadingRow(
                     heading = section.heading,
                     copyText = buildString {
@@ -258,7 +262,7 @@ private fun AiSectionContent(section: AiSection) {
                     }.trim()
                 )
                 section.questions.forEachIndexed { index, question ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Text(
                             text = "${index + 1}.",
                             style = MaterialTheme.typography.bodyLarge
@@ -274,7 +278,7 @@ private fun AiSectionContent(section: AiSection) {
         }
         is AiSection.Sources -> {
             val uriHandler = LocalUriHandler.current
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 SectionHeadingRow(
                     heading = section.heading,
                     copyText = buildString {
@@ -283,7 +287,7 @@ private fun AiSectionContent(section: AiSection) {
                     }.trim()
                 )
                 section.sources.forEach { source ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Text(text = "•", style = MaterialTheme.typography.bodyLarge)
                         Text(
                             text = source.title,
