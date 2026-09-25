@@ -76,6 +76,7 @@ import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.formatGenerationDuration
 import com.curio.notes.domain.model.Note
 import com.curio.notes.ui.components.ErrorText
+import com.curio.notes.ui.components.CurioThinkingIndicator
 import com.curio.notes.ui.components.MarkdownText
 import com.curio.notes.ui.components.ShareButton
 import com.curio.notes.ui.components.appAiLanguage
@@ -240,8 +241,16 @@ fun ConversationScreen(
                             }
                         }
                     }
-                    if (isSending) {
-                        item {
+                if (isSending) {
+                    item {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                        ) {
+                            CurioThinkingIndicator(
+                                logoSize = 28.dp,
+                                modifier = Modifier.size(48.dp)
+                            )
                             Text(
                                 text = stringResource(R.string.conv_thinking),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -249,6 +258,7 @@ fun ConversationScreen(
                             )
                         }
                     }
+                }
                 }
                 if (displayedQuestions.isEmpty() && messages.isEmpty() && !isSending) {
                     Text(

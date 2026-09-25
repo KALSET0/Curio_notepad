@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,24 +64,4 @@ fun ErrorText(
         color = MaterialTheme.colorScheme.error,
         modifier = modifier
     )
-}
-
-// Intentional processing state: the note is saved, Curio is thinking,
-// and it is safe to leave. Never a bare full-screen spinner.
-@Composable
-fun ProcessingIndicator(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
 }
