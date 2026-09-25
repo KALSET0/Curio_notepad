@@ -1,9 +1,8 @@
-# Curio_notepad
-Capture questions, ideas, and curiosities as they come to mind. Curio uses AI to organize and explain them, so you can understand them later.
-
 # Curiosity Notes
 
 > **Capture curiosity now. Understand it later.**
+
+Capture questions, ideas, and curiosities as they come to mind. Curio uses AI to organize and explain them, so you can understand them later.
 
 Curiosity Notes is a personal Android application for quickly capturing questions, ideas, concepts, doubts, and topics that you want to understand later.
 
@@ -110,6 +109,24 @@ Next Steps
 
 This allows the application to provide information that matches the user's intent instead of treating every note as a normal chat message.
 
+### 📥 Inbox Organization
+
+The inbox has **Inbox** and **Archived** tabs. Long-press a note to enter selection mode and archive, pin or delete several at once (the system back button cancels). Pinned notes stay on top and show a pin marker.
+
+Inside a note you can also archive/unarchive and pin/unpin individually, below Delete.
+
+### 🔍 Search & Filters
+
+Local keyword search across titles, original thoughts, AI content and related topics — no network needed. Results can be narrowed with per-type filter chips, sorted newest/oldest, and are grouped by day (Today / Yesterday / date) with a fast-scroll scrollbar.
+
+### 💬 Continue with AI
+
+From any answered note, **Continue with AI** opens a conversation that already carries the note's context (original thought, type, summary, related topics). Follow-up suggestions double as tap-to-send starters. Conversations are ephemeral by design.
+
+### ⚙️ Settings & Themes
+
+Choose the AI provider (**Mock AI**, **Gemini**, **OpenRouter**) with live key status, switch System / Light / Dark theme — dark is true-black AMOLED with a sky-blue accent — and read the about section.
+
 ---
 
 ## 🧠 AI Architecture
@@ -117,11 +134,11 @@ This allows the application to provide information that matches the user's inten
 The application uses an AI provider abstraction.
 
 ```text
-                    ┌── Mock AI
-                    │
-Application → AIProvider
-                    │
-                    └── Gemini
+                     ┌── Mock AI
+                     │
+Application → AIProvider ── Gemini
+                     │
+                     └── OpenRouter
 ```
 
 This allows AI providers to be replaced without changing the rest of the application.
@@ -141,9 +158,22 @@ This allows the application to be developed and tested before connecting a real 
 
 ### Gemini
 
-Gemini is the first real AI provider planned for the application.
+Gemini is a real AI provider for the application. It uses schema-constrained JSON (`gemini-3.8-flash` by default, configurable in one place) so responses always parse into structured cards.
 
-The API key is configured locally and must never be committed to the repository.
+### OpenRouter
+
+OpenRouter is a real AI provider speaking the OpenAI-compatible chat API. The default model is `openrouter/free` (free router with structured-output support); pin a specific `:free` model in one place if you prefer.
+
+### API Keys
+
+Keys live in git-ignored `local.properties` (or environment variables) and are compiled into `BuildConfig`:
+
+```properties
+GEMINI_API_KEY=
+OPENROUTER_API_KEY=   # free at https://openrouter.ai/keys
+```
+
+Empty means unconfigured — the app keeps working with Mock AI, and selecting a keyless provider shows a friendly error on notes instead of crashing. Keys must never be committed to the repository.
 
 ---
 
@@ -151,15 +181,17 @@ The API key is configured locally and must never be committed to the repository.
 
 The application is being built with:
 
-* **Kotlin**
-* **Jetpack Compose**
-* **Material 3**
-* **Android SDK**
+* **Kotlin** 2.4.20
+* **Jetpack Compose** (BOM 2026.09.00)
+* **Material 3** (true-black dark theme)
+* **Android SDK** (minSdk 26, targetSdk 36, compileSdk 37)
 * **ViewModel**
-* **Kotlin Coroutines**
-* **Room**
-* **Kotlin Serialization**
-* **Retrofit / OkHttp**
+* **Kotlin Coroutines** 1.11.0
+* **Room** 2.8.5 (KSP)
+* **Kotlin Serialization** 1.11.0
+* **OkHttp** 5.5.0
+* **DataStore Preferences** 1.2.1
+* **Gradle Kotlin DSL** (AGP 9.4.1, Gradle 9.8.0)
 
 The project aims to use modern Android development practices while avoiding unnecessary complexity.
 
@@ -167,17 +199,17 @@ The project aims to use modern Android development practices while avoiding unne
 
 ## 📁 Project Structure
 
-The planned architecture is approximately:
+The current architecture is:
 
 ```text
 app/
 ├── data/
 │   ├── local/
 │   │   ├── dao/
-│   │   ├── database/
+│   │   ├── database/   # Room DB v3 + migrations
 │   │   └── entity/
 │   │
-│   ├── remote/
+│   ├── preferences/    # DataStore settings
 │   └── repository/
 │
 ├── domain/
@@ -188,22 +220,28 @@ app/
 ├── ai/
 │   ├── AIProvider.kt
 │   ├── AIResponse.kt
-│   ├── prompts/
+│   ├── AiException.kt
+│   ├── SwitchingAIProvider.kt
+│   ├── prompts/        # centralized system prompt
 │   └── providers/
 │       ├── MockAIProvider.kt
-│       └── GeminiAIProvider.kt
+│       ├── GeminiAIProvider.kt
+│       └── OpenRouterAIProvider.kt
 │
 ├── ui/
 │   ├── home/
 │   ├── note/
+│   ├── conversation/
 │   ├── search/
 │   ├── settings/
 │   └── components/
 │
+├── di/                 # manual AppContainer, no framework
+│
 └── MainActivity.kt
 ```
 
-The structure may evolve as development continues.
+65+ unit tests live under `app/src/test`, with shared fakes in `testing/`.
 
 ---
 
@@ -211,15 +249,18 @@ The structure may evolve as development continues.
 
 Notes are stored locally using Room.
 
-A note contains information such as:
+A note contains:
 
 ```text
 id
 title
 originalText
 type
-aiResponse
+aiResponseJson
+errorMessage
 status
+isArchived
+isPinned
 createdAt
 updatedAt
 ```
@@ -235,27 +276,27 @@ ERROR
 
 The original thought is always preserved.
 
-If AI processing fails, the note should remain available rather than being lost.
+If AI processing fails, the note stays available with a user-friendly error and a retry action — it is never lost. Pinned notes sort first; archived notes leave the inbox and search but remain under the Archived tab.
 
 ---
 
 ## 🌐 Offline Behavior
 
-The application should allow thoughts to be captured without an internet connection.
-
-The intended behavior is:
+Thoughts can always be captured without an internet connection:
 
 ```text
 No Internet
     ↓
 Capture note
     ↓
-Save locally
+Save locally (Room)
     ↓
 Pending
     ↓
 Process when possible
 ```
+
+On every launch the app resets notes stuck in `PROCESSING` (e.g. killed mid-flight) back to pending and enqueues unprocessed notes automatically.
 
 AI processing itself requires an external provider unless a local AI implementation is added in the future.
 
@@ -275,7 +316,12 @@ The application does not currently require:
 
 API keys must never be stored directly in source code or committed to Git.
 
-Local configuration should be used instead, such as `local.properties` or another ignored development configuration.
+Keys are configured via git-ignored `local.properties` (see `local.properties.example`):
+
+```properties
+GEMINI_API_KEY=
+OPENROUTER_API_KEY=
+```
 
 > **Important:** An API key included in a distributed Android application can potentially be extracted. The current architecture is acceptable for a personal application, but a public release would require a more secure API architecture.
 
@@ -302,6 +348,15 @@ git clone <repository-url>
 cd curiosity-notes
 ```
 
+### Configure AI keys (optional)
+
+Copy `local.properties.example` to `local.properties` and fill in the keys you have. Empty means unconfigured — the app fully works with Mock AI:
+
+```properties
+GEMINI_API_KEY=
+OPENROUTER_API_KEY=
+```
+
 ### Build the project
 
 On Windows:
@@ -316,6 +371,14 @@ On macOS/Linux:
 ./gradlew assembleDebug
 ```
 
+### Run tests
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest
+```
+
+Reports land in `app/build/reports/tests/testDebugUnitTest/index.html`.
+
 ### Run
 
 The application can be launched on:
@@ -329,28 +392,38 @@ The application can be launched on:
 
 Development is intentionally incremental.
 
-The project is being built in stages:
+The project was built in stages (all complete):
 
 ```text
-Project Foundation
-       ↓
-Local Notes
-       ↓
-Note Creation
-       ↓
-AI Architecture
-       ↓
-Mock AI
-       ↓
-Structured Responses
-       ↓
-Gemini Integration
-       ↓
-Search
-       ↓
-Continue with AI
-       ↓
-Polish & Testing
+Project Foundation ✅
+        ↓
+Local Notes ✅
+        ↓
+Note Creation ✅
+        ↓
+AI Architecture ✅
+        ↓
+Mock AI ✅
+        ↓
+Structured Responses ✅
+        ↓
+Gemini Integration ✅
+        ↓
+Centralized AI Prompt ✅
+        ↓
+Search ✅
+        ↓
+Continue with AI ✅
+        ↓
+Settings & Preferences ✅
+        ↓
+Reliability ✅
+        ↓
+UI Polish ✅
+        ↓
+Testing ✅
+        ↓
+Personal Release ✅
 ```
 
 The application should remain functional after every stage.
@@ -361,26 +434,30 @@ The application should remain functional after every stage.
 
 ### MVP
 
-* [ ] Android project foundation
-* [ ] Jetpack Compose UI
-* [ ] Navigation
-* [ ] Local Room database
-* [ ] Create notes
-* [ ] Edit notes
-* [ ] Delete notes
-* [ ] Home/inbox
-* [ ] Note detail
-* [ ] Note processing states
-* [ ] Mock AI provider
-* [ ] Automatic note classification
-* [ ] Structured AI responses
-* [ ] Gemini provider
-* [ ] Local Gemini configuration
-* [ ] Search
-* [ ] Settings
-* [ ] Light/dark themes
-* [ ] Error handling
-* [ ] Continue with AI
+* [x] Android project foundation
+* [x] Jetpack Compose UI
+* [x] Navigation
+* [x] Local Room database (v3 + migrations)
+* [x] Create notes
+* [x] Edit notes
+* [x] Delete notes (single + multi-select)
+* [x] Archive / unarchive notes
+* [x] Pin notes
+* [x] Home/inbox (Inbox/Archived tabs)
+* [x] Note detail
+* [x] Note processing states
+* [x] Mock AI provider
+* [x] Automatic note classification
+* [x] Structured AI responses
+* [x] Gemini provider
+* [x] OpenRouter provider
+* [x] Local API-key configuration
+* [x] Centralized AI prompt
+* [x] Search (type filters, sort, day groups, fast scroll)
+* [x] Settings (provider, theme)
+* [x] Light/dark themes (true-black dark)
+* [x] Error handling (user-friendly, offline-safe)
+* [x] Continue with AI
 
 ### Future
 
@@ -389,7 +466,6 @@ These features are intentionally outside the initial MVP:
 * [ ] Tags
 * [ ] Collections
 * [ ] Favorites
-* [ ] Archive
 * [ ] Learned status
 * [ ] Semantic search
 * [ ] Related-note discovery
@@ -399,7 +475,6 @@ These features are intentionally outside the initial MVP:
 * [ ] Spaced repetition
 * [ ] Local AI models
 * [ ] Cloud synchronization
-* [ ] Additional AI providers
 * [ ] Home-screen widgets
 * [ ] Notifications
 
@@ -426,11 +501,9 @@ The most important UX principle is:
 
 ## 🛠️ Development Status
 
-**Status: Early Development**
+**Status: Personal Release — in daily use**
 
-This project is currently being developed as a personal application.
-
-The architecture and features may change significantly while the core idea is being tested.
+The MVP is complete and the app is used as a personal daily driver. New ideas go through the same lens: capture fast, keep the inbox calm, never lose a thought.
 
 ---
 
