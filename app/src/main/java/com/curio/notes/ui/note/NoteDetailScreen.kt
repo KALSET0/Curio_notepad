@@ -1,5 +1,11 @@
 package com.curio.notes.ui.note
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -405,18 +411,25 @@ private fun NoteDetailContent(
         operationError?.let { code ->
             ErrorText(text = errorMessageFor(code))
         }
-        if (note.status == NoteStatus.ANSWERED) {
-            if (aiResponse != null) {
-                AiResponseCard(response = aiResponse)
-            } else {
-                ErrorText(text = stringResource(R.string.ai_unavailable))
-            }
+        if (note.status == NoteStatus.ANSWERED && aiResponse == null) {
+            ErrorText(text = stringResource(R.string.ai_unavailable))
         }
-        if (note.status == NoteStatus.ANSWERED && aiResponse != null) {
-            CurioPrimaryButton(
-                text = stringResource(R.string.continue_ai),
-                onClick = onContinueWithAI
-            )
+        AnimatedVisibility(
+            visible = note.status == NoteStatus.ANSWERED && aiResponse != null,
+            enter = fadeIn(animationSpec = tween(300)) +
+                expandVertically(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(200)) +
+                shrinkVertically(animationSpec = tween(200))
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                aiResponse?.let { response ->
+                    AiResponseCard(response = response)
+                    CurioPrimaryButton(
+                        text = stringResource(R.string.continue_ai),
+                        onClick = onContinueWithAI
+                    )
+                }
+            }
         }
         if (conversation.isNotEmpty()) {
             ConversationHistory(messages = conversation)

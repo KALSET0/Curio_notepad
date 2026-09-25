@@ -152,4 +152,10 @@
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="cd_share">Compartir</string>
     <string name="share_chooser_title">Compartir con IA</string>
+    <string name="cd_pinned">Fijada</string>
+    <string name="cd_selected">Seleccionada</string>
+    <string name="cd_open_note">Abrir nota</string>
+    <string name="cd_select_note">Seleccionar nota</string>
+    <string name="cd_collapse">Contraer</string>
+    <string name="cd_expand">Expandir</string>
 </resources>

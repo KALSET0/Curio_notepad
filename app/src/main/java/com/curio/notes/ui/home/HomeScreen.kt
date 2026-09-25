@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
@@ -77,6 +78,7 @@ fun HomeScreen(
     val selectionMode = selectedIds.isNotEmpty()
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val visibleNotes = if (showArchived) archivedNotes else notes
+    val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val language = appAiLanguage()
@@ -182,6 +184,7 @@ fun HomeScreen(
             if (!selectionMode) {
                 ExtendedFloatingActionButton(
                     onClick = onCreateNote,
+                    expanded = !listState.isScrollInProgress,
                     icon = {
                         Icon(
                             Icons.Default.Add,
@@ -238,6 +241,7 @@ fun HomeScreen(
                 )
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .weight(1f),
@@ -253,6 +257,7 @@ fun HomeScreen(
                         NoteCard(
                             note = note,
                             selected = note.id in selectedIds,
+                            modifier = Modifier.animateItem(),
                             onClick = {
                                 if (selectionMode) {
                                     viewModel.toggleSelection(note.id)

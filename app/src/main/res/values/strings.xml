@@ -152,4 +152,10 @@
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="cd_share">Share</string>
     <string name="share_chooser_title">Share with AI</string>
+    <string name="cd_pinned">Pinned</string>
+    <string name="cd_selected">Selected</string>
+    <string name="cd_open_note">Open note</string>
+    <string name="cd_select_note">Select note</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_expand">Expand</string>
 </resources>

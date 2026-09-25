@@ -173,11 +173,18 @@ fun SearchScreen(
                         verticalArrangement = Arrangement.spacedBy(Spacing.md)
                     ) {
                         grouped.forEach { (day, dayNotes) ->
-                                item(key = "header-$day") {
-                                    SectionHeader(text = dayLabel(day))
-                                }
+                            item(key = "header-$day") {
+                                SectionHeader(
+                                    text = dayLabel(day),
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
                             items(dayNotes, key = { it.id }) { note ->
-                                NoteCard(note = note, onClick = { onOpenNote(note.id) })
+                                NoteCard(
+                                    note = note,
+                                    onClick = { onOpenNote(note.id) },
+                                    modifier = Modifier.animateItem()
+                                )
                             }
                         }
                     }

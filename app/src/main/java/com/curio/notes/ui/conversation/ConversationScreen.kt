@@ -277,7 +277,13 @@ private fun ContextHeader(note: Note, modifier: Modifier = Modifier) {
                     } else {
                         Icons.Default.ExpandMore
                     },
-                    contentDescription = null,
+                    contentDescription = stringResource(
+                        if (expanded) {
+                            R.string.cd_collapse
+                        } else {
+                            R.string.cd_expand
+                        }
+                    ),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

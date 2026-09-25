@@ -22,7 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.curio.notes.R
 import com.curio.notes.ai.parseAiResponse
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
@@ -58,7 +60,12 @@ fun NoteCard(
         ),
         modifier = modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+                onClickLabel = stringResource(R.string.cd_open_note),
+                onLongClickLabel = stringResource(R.string.cd_select_note)
+            )
     ) {
         Column(
             modifier = Modifier.padding(Spacing.lg),
@@ -104,12 +111,15 @@ fun NoteCard(
                 itemVerticalAlignment = Alignment.CenterVertically
             ) {
                 if (selected) {
-                    Icon(Icons.Default.Check, contentDescription = null)
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = stringResource(R.string.cd_selected)
+                    )
                 }
                 if (note.isPinned) {
                     Icon(
                         Icons.Default.PushPin,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.cd_pinned),
                         tint = MaterialTheme.colorScheme.secondary
                     )
                 }

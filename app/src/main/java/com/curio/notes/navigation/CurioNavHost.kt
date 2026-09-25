@@ -1,5 +1,10 @@
 package com.curio.notes.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,7 +23,18 @@ fun CurioNavHost() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = CurioRoute.Splash
+        startDestination = CurioRoute.Splash,
+        // Short, calm transitions everywhere: slight horizontal drift + fade.
+        enterTransition = {
+            fadeIn(animationSpec = tween(250)) +
+                slideInHorizontally(animationSpec = tween(250)) { it / 8 }
+        },
+        exitTransition = { fadeOut(animationSpec = tween(200)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(250)) },
+        popExitTransition = {
+            fadeOut(animationSpec = tween(200)) +
+                slideOutHorizontally(animationSpec = tween(250)) { it / 8 }
+        }
     ) {
         composable<CurioRoute.Splash> {
             SplashScreen(
