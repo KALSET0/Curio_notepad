@@ -1,6 +1,7 @@
 package com.curio.notes.ai
 
 import com.curio.notes.domain.model.AiProviderChoice
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
 import com.curio.notes.domain.model.NoteType
 import com.curio.notes.domain.repository.SettingsRepository
@@ -59,6 +60,7 @@ class SwitchingAIProviderTest {
     private class FakeSettingsRepository : SettingsRepository {
         private val theme = MutableStateFlow(AppTheme.SYSTEM)
         private val provider = MutableStateFlow(AiProviderChoice.MOCK)
+        private val language = MutableStateFlow(AppLanguage.SYSTEM)
 
         fun emit(choice: AiProviderChoice) {
             provider.value = choice
@@ -74,6 +76,12 @@ class SwitchingAIProviderTest {
 
         override suspend fun setAiProvider(choice: AiProviderChoice) {
             provider.value = choice
+        }
+
+        override fun observeLanguage() = language
+
+        override suspend fun setLanguage(language: AppLanguage) {
+            this.language.value = language
         }
     }
 }

@@ -8,7 +8,11 @@ import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
 import com.curio.notes.ai.prompts.CurioPrompts
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.NoteType
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -34,18 +38,22 @@ class GeminiAIProvider(
     private val apiKey: String,
     private val model: String = GeminiConfig.MODEL,
     private val baseUrl: String = GeminiConfig.BASE_URL,
-    private val client: OkHttpClient = defaultClient()
+    private val client: OkHttpClient = defaultClient(),
+    private val language: Flow<AppLanguage> = flowOf(AppLanguage.ENGLISH)
 ) : AIProvider {
 
     override suspend fun classifyAndAnswer(input: String): AIResponse {
         if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        val aiLanguage = language.first().toAiLanguage()
         val body = AiJson.encodeToString(
             GeminiRequest(
-                systemInstruction = GeminiContent(parts = listOf(GeminiPart(CurioPrompts.SYSTEM_PROMPT))),
+                systemInstruction = GeminiContent(
+                    parts = listOf(GeminiPart(CurioPrompts.systemPromptFor(aiLanguage)))
+                ),
                 contents = listOf(
                     GeminiContent(
                         role = "user",
-                        parts = listOf(GeminiPart(CurioPrompts.userPromptFor(input)))
+                        parts = listOf(GeminiPart(CurioPrompts.userPromptFor(input, aiLanguage)))
                     )
                 ),
                 generationConfig = GeminiGenerationConfig(
@@ -72,18 +80,21 @@ class GeminiAIProvider(
         input: String
     ): String {
         if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        val aiLanguage = language.first().toAiLanguage()
         val contents = buildList {
             add(
                 GeminiContent(
                     role = "user",
-                    parts = listOf(GeminiPart(CurioPrompts.conversationContextFor(context)))
+                    parts = listOf(
+                        GeminiPart(CurioPrompts.conversationContextFor(context, aiLanguage))
+                    )
                 )
             )
             add(
                 GeminiContent(
                     role = "model",
                     parts = listOf(
-                        GeminiPart("Understood. I'll answer follow-up questions about this thought.")
+                        GeminiPart(CurioPrompts.acknowledgementFor(aiLanguage))
                     )
                 )
             )
@@ -100,7 +111,7 @@ class GeminiAIProvider(
         val body = AiJson.encodeToString(
             GeminiChatRequest(
                 systemInstruction = GeminiContent(
-                    parts = listOf(GeminiPart(CurioPrompts.CONTINUATION_SYSTEM))
+                    parts = listOf(GeminiPart(CurioPrompts.continuationSystemFor(aiLanguage)))
                 ),
                 contents = contents,
                 generationConfig = GeminiChatConfig(

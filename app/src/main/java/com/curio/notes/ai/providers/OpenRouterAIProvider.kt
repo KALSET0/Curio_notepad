@@ -8,6 +8,10 @@ import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
 import com.curio.notes.ai.prompts.CurioPrompts
+import com.curio.notes.domain.model.AppLanguage
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -29,17 +33,19 @@ class OpenRouterAIProvider(
     private val apiKey: String,
     private val model: String = OpenRouterConfig.MODEL,
     private val baseUrl: String = OpenRouterConfig.BASE_URL,
-    private val client: OkHttpClient = GeminiAIProvider.defaultClient()
+    private val client: OkHttpClient = GeminiAIProvider.defaultClient(),
+    private val language: Flow<AppLanguage> = flowOf(AppLanguage.ENGLISH)
 ) : AIProvider {
 
     override suspend fun classifyAndAnswer(input: String): AIResponse {
         if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        val aiLanguage = language.first().toAiLanguage()
         val body = StrictJson.encodeToString(
             OpenRouterChatRequest(
                 model = model,
                 messages = listOf(
-                    OpenRouterMessage("system", CurioPrompts.SYSTEM_PROMPT),
-                    OpenRouterMessage("user", CurioPrompts.userPromptFor(input))
+                    OpenRouterMessage("system", CurioPrompts.systemPromptFor(aiLanguage)),
+                    OpenRouterMessage("user", CurioPrompts.userPromptFor(input, aiLanguage))
                 ),
                 temperature = OpenRouterConfig.TEMPERATURE,
                 maxTokens = OpenRouterConfig.MAX_OUTPUT_TOKENS,
@@ -62,13 +68,14 @@ class OpenRouterAIProvider(
         input: String
     ): String {
         if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        val aiLanguage = language.first().toAiLanguage()
         val messages = buildList {
-            add(OpenRouterMessage("system", CurioPrompts.CONTINUATION_SYSTEM))
-            add(OpenRouterMessage("user", CurioPrompts.conversationContextFor(context)))
+            add(OpenRouterMessage("system", CurioPrompts.continuationSystemFor(aiLanguage)))
+            add(OpenRouterMessage("user", CurioPrompts.conversationContextFor(context, aiLanguage)))
             add(
                 OpenRouterMessage(
                     "assistant",
-                    "Understood. I'll answer follow-up questions about this thought."
+                    CurioPrompts.acknowledgementFor(aiLanguage)
                 )
             )
             history.forEach { message ->

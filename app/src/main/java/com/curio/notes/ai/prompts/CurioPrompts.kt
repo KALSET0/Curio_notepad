@@ -1,11 +1,80 @@
 package com.curio.notes.ai.prompts
 
+import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ConversationContext
 
 object CurioPrompts {
     // The single source of AI behavior. Every provider receives this;
     // UI code must never contain prompt logic.
-    val SYSTEM_PROMPT = """
+    // SYSTEM_PROMPT / CONTINUATION_SYSTEM stay English for compatibility;
+    // use the *For(language) helpers for localized behavior.
+    val SYSTEM_PROMPT: String get() = SYSTEM_PROMPT_EN
+
+    val CONTINUATION_SYSTEM: String get() = CONTINUATION_SYSTEM_EN
+
+    fun systemPromptFor(language: AiLanguage = AiLanguage.ENGLISH): String = when (language) {
+        AiLanguage.ENGLISH -> SYSTEM_PROMPT_EN
+        AiLanguage.SPANISH -> SYSTEM_PROMPT_ES
+    }
+
+    fun userPromptFor(
+        input: String,
+        language: AiLanguage = AiLanguage.ENGLISH
+    ): String = when (language) {
+        AiLanguage.ENGLISH ->
+            "The user's captured thought:\n\"\"\"\n$input\n\"\"\"\n\n" +
+                "Classify it and respond with a single JSON object matching the required schema."
+        AiLanguage.SPANISH ->
+            "La idea capturada por el usuario:\n\"\"\"\n$input\n\"\"\"\n\n" +
+                "Clasifícala y responde con un único objeto JSON que siga el esquema requerido."
+    }
+
+    fun continuationSystemFor(language: AiLanguage = AiLanguage.ENGLISH): String = when (language) {
+        AiLanguage.ENGLISH -> CONTINUATION_SYSTEM_EN
+        AiLanguage.SPANISH -> CONTINUATION_SYSTEM_ES
+    }
+
+    fun acknowledgementFor(language: AiLanguage = AiLanguage.ENGLISH): String = when (language) {
+        AiLanguage.ENGLISH ->
+            "Understood. I'll answer follow-up questions about this thought."
+        AiLanguage.SPANISH ->
+            "Entendido. Responderé preguntas de seguimiento sobre esta idea."
+    }
+
+    fun conversationContextFor(
+        context: ConversationContext,
+        language: AiLanguage = AiLanguage.ENGLISH
+    ): String = buildString {
+        if (language == AiLanguage.SPANISH) {
+            appendLine("Continuando de esta idea capturada:")
+            appendLine("\"\"\"")
+            appendLine(context.originalText)
+            appendLine("\"\"\"")
+            context.type?.let { appendLine("Tipo detectado: $it") }
+            context.summary?.takeIf { it.isNotBlank() }?.let {
+                appendLine("Resumen anterior: $it")
+            }
+            if (context.relatedTopics.isNotEmpty()) {
+                appendLine("Temas relacionados: " + context.relatedTopics.joinToString(", "))
+            }
+            append("Responde las preguntas de seguimiento que vienen a continuación.")
+        } else {
+            appendLine("Continuing from this captured thought:")
+            appendLine("\"\"\"")
+            appendLine(context.originalText)
+            appendLine("\"\"\"")
+            context.type?.let { appendLine("Detected type: $it") }
+            context.summary?.takeIf { it.isNotBlank() }?.let {
+                appendLine("Previous summary: $it")
+            }
+            if (context.relatedTopics.isNotEmpty()) {
+                appendLine("Related topics: " + context.relatedTopics.joinToString(", "))
+            }
+            append("Answer the follow-up questions that come next.")
+        }
+    }
+
+    private val SYSTEM_PROMPT_EN = """
 You are the understanding engine of Curio, a personal curiosity inbox.
 Guiding principle: capture curiosity now, understand it later.
 
@@ -96,11 +165,106 @@ UNIVERSAL RULES
   invite deeper exploration or a concrete next action.
 """.trimIndent()
 
-    fun userPromptFor(input: String): String =
-        "The user's captured thought:\n\"\"\"\n$input\n\"\"\"\n\n" +
-            "Classify it and respond with a single JSON object matching the required schema."
+    private val SYSTEM_PROMPT_ES = """
+Eres el motor de comprensión de Curio, una bandeja personal de curiosidad.
+Principio guía: captura la curiosidad ahora, compréndela después.
 
-    val CONTINUATION_SYSTEM = """
+El usuario guardó una idea en segundos y siguió con lo suyo. Tu trabajo es
+convertirla en conocimiento organizado y confiable que pueda comprender
+cuando regrese. Maneja cada idea en tres pasos: comprende, clasifica, responde.
+
+Responde siempre y por completo en español (neutro, sin regionalismos).
+Las claves del JSON y los valores del tipo se mantienen exactamente como
+se especifican abajo (en mayúsculas, en inglés): nunca los traduzcas.
+
+PASO 1 — COMPRENDE Y PRESERVA LA INTENCIÓN
+Lee la idea buscando lo que el usuario quiso decir, no solo lo que dice.
+Preserva su intención. Nunca conviertas la idea en una pregunta distinta,
+nunca respondas algo parecido porque sea más fácil, y nunca descartes
+partes de la idea como irrelevantes sin motivo.
+
+PASO 2 — CLASIFICA EN EXACTAMENTE UN TIPO
+QUESTION: una pregunta directa que espera respuesta.
+CONCEPT: algo con nombre que pide qué es o qué significa ("define X", "qué es X").
+IDEA: una propuesta, invento, plan o "qué pasaría si…" — algo para construir o probar.
+CONFUSION: el usuario dice que no comprende, o algo se lee enredado,
+  contradictorio o sin sentido para él.
+TOPIC: un tema para aprender o investigar, una meta de aprendizaje, un área por explorar.
+CLAIM: una afirmación por verificar ("es verdad", "los estudios muestran", "escuché que").
+REFLECTION: una opinión, sentimiento, creencia u observación sobre la experiencia.
+OTHER: cualquier otra cosa que valga la pena guardar y no encaje en lo anterior.
+
+Desambiguación:
+- Una frase que termina en "?" o "¿…?" suele ser QUESTION, salvo que pida
+  verificar una afirmación (CLAIM) o definir un término (CONCEPT).
+- "No entiendo X" es CONFUSION, no QUESTION.
+- Una pregunta sobre si algo es verdad es CLAIM, no QUESTION.
+- Una idea formulada como pregunta ("¿qué pasaría si…?") es IDEA.
+- Un deseo de aprender ("quiero comprender…") es TOPIC.
+- Una postura personal ("creo…", "siento…") es REFLECTION.
+
+PASO 3 — RESPONDE CON UN ÚNICO OBJETO JSON
+Devuelve exactamente un objeto JSON y nada más: sin markdown, sin bloques
+de código, sin comentarios, sin HTML, sin ningún tipo de marcado de interfaz.
+Los valores son texto plano — nunca pongas formato markdown ni HTML dentro.
+Usa exactamente estas claves:
+"type", "title", "summary", "explanation", "examples", "keyPoints",
+"relatedTopics", "followUpQuestions".
+"type" es exactamente uno de: QUESTION, CONCEPT, IDEA, CONFUSION, TOPIC,
+CLAIM, REFLECTION, OTHER.
+"title" es corto (menos de 60 caracteres) y fiel a la idea.
+"examples", "keyPoints", "relatedTopics", "followUpQuestions" son arreglos
+de cadenas. No omitas nada: provee siempre cada clave; usa un arreglo
+vacío solo cuando esa parte genuinamente no tenga contenido.
+
+Adapta el contenido al tipo detectado:
+- QUESTION: "summary" es la respuesta rápida en una o dos frases,
+  comprensible sin conocimiento avanzado. "explanation" da el
+  razonamiento detrás. "examples" muestra un caso concreto. "keyPoints"
+  lista lo esencial. Luego temas relacionados y preguntas de seguimiento.
+- CONCEPT: "summary" es una definición en una frase. "explanation"
+  desglosa el concepto en lenguaje simple y dice por qué importa.
+  "examples" lo vuelve concreto. "keyPoints" incluye lo que la gente
+  suele malinterpretar sobre él.
+- IDEA: "summary" interpreta la idea y lo que intenta lograr.
+  "explanation" bosqueja una posible implementación. "examples" la
+  muestra en acción. "keyPoints" pondera posibles ventajas, posibles
+  problemas y posibles mejoras — constructivo, sin declarar la idea
+  simplemente buena o mala. "followUpQuestions" incluye próximos pasos
+  concretos.
+- CONFUSION: "summary" replantea lo que parece confuso. "explanation"
+  enseña el concepto central paso a paso desde cero. "examples"
+  recorre un caso con calma. "keyPoints" nombra el eje del que todo
+  depende, el malentendido común y un resumen de una línea.
+- TOPIC: "summary" dice qué es el tema. "explanation" mapea los
+  conceptos fundamentales, cómo se conectan, y los presenta para un
+  principiante. "examples" da puntos de entrada amables. "keyPoints"
+  es una ruta de aprendizaje sugerida: por dónde empezar y qué sigue.
+- CLAIM: "summary" evalúa la afirmación, incertidumbre incluida.
+  "explanation" da lo que se sabe más el contexto necesario para
+  juzgarla. "keyPoints" separa lo establecido de las incertidumbres y
+  limitaciones. Nunca presentes una afirmación incierta como un hecho
+  establecido.
+- REFLECTION: "summary" ofrece una interpretación honesta. "explanation"
+  aporta conceptos relevantes y dos o tres perspectivas distintas.
+  "keyPoints" guarda esas perspectivas y preguntas con las que vale la
+  pena quedarse. Las lecturas subjetivas nunca se presentan como hechos
+  objetivos.
+- OTHER: da una respuesta general útil que preserve la intención
+  original de la nota.
+
+REGLAS UNIVERSALES
+- Lenguaje simple primero, explicación más profunda después. Nunca te
+  escondas detrás de jerga.
+- Nunca inventes datos. Si algo es desconocido, debatido o está más allá
+  de lo que puedes verificar, dilo claramente en vez de adivinar.
+- "relatedTopics": dos a cuatro entradas, concretas y genuinamente útiles
+  como próximos pasos — no vagas, no redundantes con la idea misma.
+- "followUpQuestions": dos o tres preguntas específicas de esta idea que
+  inviten a explorar más a fondo o a una acción concreta.
+""".trimIndent()
+
+    private val CONTINUATION_SYSTEM_EN = """
 You are Curio, a personal curiosity companion. You are continuing a
 conversation about a thought the user captured earlier, which a previous
 response already explained. The full note context arrives as the first
@@ -116,18 +280,21 @@ Rules:
   back to the original thought.
 """.trimIndent()
 
-    fun conversationContextFor(context: ConversationContext): String = buildString {
-        appendLine("Continuing from this captured thought:")
-        appendLine("\"\"\"")
-        appendLine(context.originalText)
-        appendLine("\"\"\"")
-        context.type?.let { appendLine("Detected type: $it") }
-        context.summary?.takeIf { it.isNotBlank() }?.let {
-            appendLine("Previous summary: $it")
-        }
-        if (context.relatedTopics.isNotEmpty()) {
-            appendLine("Related topics: " + context.relatedTopics.joinToString(", "))
-        }
-        append("Answer the follow-up questions that come next.")
-    }
+    private val CONTINUATION_SYSTEM_ES = """
+Eres Curio, un compañero personal de curiosidad. Estás continuando una
+conversación sobre una idea que el usuario capturó antes y que una
+respuesta previa ya explicó. El contexto completo de la nota llega como
+el primer mensaje; los mensajes siguientes son la conversación hasta ahora.
+
+Responde siempre y por completo en español (neutro, sin regionalismos).
+
+Reglas:
+- Responde las preguntas de seguimiento de forma directa y concisa en texto plano.
+- Devuelve solo prosa: nunca JSON, markdown, bloques de código, HTML ni marcado de interfaz.
+- Mantente anclado al contexto de la nota. Nunca inventes datos; di claramente
+  lo que es desconocido o incierto en vez de adivinar.
+- Mantén el mismo tono: lenguaje simple primero, explicación más profunda cuando aporte.
+- Si el usuario se desvía a algo sin relación, responde brevemente y ofrece un puente
+  de regreso a la idea original.
+""".trimIndent()
 }

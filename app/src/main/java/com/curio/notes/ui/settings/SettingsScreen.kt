@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.domain.model.AiProviderChoice
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
 import com.curio.notes.ui.util.rememberAppContainer
 
@@ -48,6 +49,7 @@ fun SettingsScreen(
 ) {
     val theme by viewModel.theme.collectAsStateWithLifecycle()
     val provider by viewModel.aiProvider.collectAsStateWithLifecycle()
+    val language by viewModel.language.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -133,6 +135,26 @@ fun SettingsScreen(
                 title = stringResource(R.string.theme_dark),
                 subtitle = null,
                 onSelect = { viewModel.setTheme(AppTheme.DARK) }
+            )
+
+            SettingsSectionTitle(stringResource(R.string.section_language))
+            RadioOption(
+                selected = language == AppLanguage.SYSTEM,
+                title = stringResource(R.string.lang_system),
+                subtitle = stringResource(R.string.lang_system_sub),
+                onSelect = { viewModel.setLanguage(AppLanguage.SYSTEM) }
+            )
+            RadioOption(
+                selected = language == AppLanguage.ENGLISH,
+                title = stringResource(R.string.lang_english),
+                subtitle = null,
+                onSelect = { viewModel.setLanguage(AppLanguage.ENGLISH) }
+            )
+            RadioOption(
+                selected = language == AppLanguage.SPANISH,
+                title = stringResource(R.string.lang_spanish),
+                subtitle = null,
+                onSelect = { viewModel.setLanguage(AppLanguage.SPANISH) }
             )
 
             SettingsSectionTitle(stringResource(R.string.section_about))

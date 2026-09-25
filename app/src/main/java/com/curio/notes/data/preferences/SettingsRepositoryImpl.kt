@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.curio.notes.domain.model.AiProviderChoice
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
 import com.curio.notes.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.map
 private const val SETTINGS_NAME = "curio_settings"
 private val THEME_KEY = stringPreferencesKey("app_theme")
 private val AI_PROVIDER_KEY = stringPreferencesKey("ai_provider")
+private val LANGUAGE_KEY = stringPreferencesKey("app_language")
 
 val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = SETTINGS_NAME)
 
@@ -39,5 +41,15 @@ class SettingsRepositoryImpl(
 
     override suspend fun setAiProvider(choice: AiProviderChoice) {
         dataStore.edit { prefs -> prefs[AI_PROVIDER_KEY] = choice.name }
+    }
+
+    override fun observeLanguage(): Flow<AppLanguage> = dataStore.data.map { prefs ->
+        runCatching {
+            AppLanguage.valueOf(prefs[LANGUAGE_KEY] ?: AppLanguage.SYSTEM.name)
+        }.getOrDefault(AppLanguage.SYSTEM)
+    }
+
+    override suspend fun setLanguage(language: AppLanguage) {
+        dataStore.edit { prefs -> prefs[LANGUAGE_KEY] = language.name }
     }
 }

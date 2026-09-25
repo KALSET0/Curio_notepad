@@ -57,6 +57,7 @@ import com.curio.notes.ui.components.CopyIconButton
 import com.curio.notes.ui.components.StatusChip
 import com.curio.notes.ui.components.TypeChip
 import com.curio.notes.ui.util.errorMessageFor
+import com.curio.notes.ui.util.appLocale
 import com.curio.notes.ui.util.formatTimestamp
 import com.curio.notes.ui.util.rememberAppContainer
 
@@ -219,7 +220,7 @@ private fun NoteDetailContent(
             }
         }
         Text(
-            text = stringResource(R.string.detail_created, formatTimestamp(note.createdAt)),
+            text = stringResource(R.string.detail_created, formatTimestamp(note.createdAt, appLocale())),
             style = MaterialTheme.typography.labelSmall
         )
         if (note.status == NoteStatus.ANSWERED) {

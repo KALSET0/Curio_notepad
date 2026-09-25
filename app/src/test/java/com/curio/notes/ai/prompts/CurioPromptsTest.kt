@@ -1,7 +1,9 @@
 package com.curio.notes.ai.prompts
 
+import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ConversationContext
 import com.curio.notes.domain.model.NoteType
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -75,5 +77,61 @@ class CurioPromptsTest {
         val system = CurioPrompts.CONTINUATION_SYSTEM.lowercase()
         assertTrue(system.contains("plain text"))
         assertTrue(system.contains("follow-up"))
+    }
+
+    @Test
+    fun `english helpers stay the default`() {
+        assertEquals(CurioPrompts.SYSTEM_PROMPT, CurioPrompts.systemPromptFor(AiLanguage.ENGLISH))
+        assertEquals(
+            CurioPrompts.CONTINUATION_SYSTEM,
+            CurioPrompts.continuationSystemFor(AiLanguage.ENGLISH)
+        )
+    }
+
+    @Test
+    fun `spanish system prompt keeps schema and demands spanish`() {
+        val prompt = CurioPrompts.systemPromptFor(AiLanguage.SPANISH)
+        val keys = listOf(
+            "type", "title", "summary", "explanation",
+            "examples", "keyPoints", "relatedTopics", "followUpQuestions"
+        )
+        for (key in keys) {
+            assertTrue("ES prompt does not specify \"$key\"", prompt.contains("\"$key\""))
+        }
+        for (type in NoteType.entries) {
+            assertTrue("ES prompt does not define $type", prompt.contains(type.name))
+        }
+        assertTrue(prompt.lowercase().contains("espa"))
+        assertTrue(prompt.contains("JSON"))
+    }
+
+    @Test
+    fun `spanish user prompt embeds the thought`() {
+        val input = "¿Por qué el cielo es azul?"
+        val prompt = CurioPrompts.userPromptFor(input, AiLanguage.SPANISH)
+        assertTrue(prompt.contains(input))
+        assertTrue(prompt.contains("JSON"))
+    }
+
+    @Test
+    fun `spanish conversation context is translated`() {
+        val context = ConversationContext(
+            originalText = "¿Por qué?",
+            type = NoteType.QUESTION,
+            summary = "Porque sí.",
+            relatedTopics = listOf("T1")
+        )
+        val text = CurioPrompts.conversationContextFor(context, AiLanguage.SPANISH)
+        assertTrue(text.contains("¿Por qué?"))
+        assertTrue(text.contains("QUESTION"))
+        assertTrue(text.contains("Porque sí."))
+        assertTrue(text.contains("Tipo detectado"))
+    }
+
+    @Test
+    fun `spanish continuation system demands spanish prose`() {
+        val system = CurioPrompts.continuationSystemFor(AiLanguage.SPANISH).lowercase()
+        assertTrue(system.contains("espa"))
+        assertTrue(system.contains("texto plano"))
     }
 }

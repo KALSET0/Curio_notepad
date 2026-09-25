@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.curio.notes.domain.model.AiProviderChoice
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
@@ -22,6 +23,7 @@ class SettingsRepositoryTest {
 
         assertEquals(AppTheme.SYSTEM, repository.observeTheme().first())
         assertEquals(AiProviderChoice.MOCK, repository.observeAiProvider().first())
+        assertEquals(AppLanguage.SYSTEM, repository.observeLanguage().first())
     }
 
     @Test
@@ -30,9 +32,11 @@ class SettingsRepositoryTest {
 
         repository.setTheme(AppTheme.DARK)
         repository.setAiProvider(AiProviderChoice.GEMINI)
+        repository.setLanguage(AppLanguage.SPANISH)
 
         assertEquals(AppTheme.DARK, repository.observeTheme().first())
         assertEquals(AiProviderChoice.GEMINI, repository.observeAiProvider().first())
+        assertEquals(AppLanguage.SPANISH, repository.observeLanguage().first())
     }
 
     @Test
@@ -41,11 +45,13 @@ class SettingsRepositoryTest {
         store.edit { prefs ->
             prefs[stringPreferencesKey("app_theme")] = "NOPE"
             prefs[stringPreferencesKey("ai_provider")] = "NOPE"
+            prefs[stringPreferencesKey("app_language")] = "NOPE"
         }
         val repository = SettingsRepositoryImpl(store)
 
         assertEquals(AppTheme.SYSTEM, repository.observeTheme().first())
         assertEquals(AiProviderChoice.MOCK, repository.observeAiProvider().first())
+        assertEquals(AppLanguage.SYSTEM, repository.observeLanguage().first())
     }
 
     private fun TestScope.testStore(): DataStore<Preferences> {

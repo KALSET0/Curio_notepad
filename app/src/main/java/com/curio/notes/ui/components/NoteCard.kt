@@ -24,6 +24,7 @@ import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.domain.model.NoteType
 import com.curio.notes.ui.util.formatTimestamp
+import com.curio.notes.ui.util.appLocale
 import com.curio.notes.ui.util.label
 
 @Composable
@@ -80,7 +81,7 @@ fun NoteCard(
                 StatusChip(status = note.status)
                 note.type?.let { TypeChip(type = it) }
                 Text(
-                    text = formatTimestamp(note.createdAt),
+                    text = formatTimestamp(note.createdAt, appLocale()),
                     style = MaterialTheme.typography.labelSmall
                 )
             }

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Curio Notepad</string>
+    <string name="tagline">Captura tu curiosidad ahora. Compréndela después.</string>
+    <string name="loading">Cargando…</string>
+
+    <!-- Home / inbox -->
+    <string name="inbox_title">Bandeja Curio</string>
+    <string name="cd_search">Buscar</string>
+    <string name="cd_settings">Ajustes</string>
+    <string name="cd_create_note">Crear nota</string>
+    <string name="inbox_empty_body">Tu bandeja está vacía. Toca + para capturar tu primera idea.</string>
+    <string name="archived_empty_body">No hay ideas archivadas. Mantén presionada una nota de la bandeja para seleccionarla y archivarla.</string>
+    <plurals name="inbox_thoughts">
+        <item quantity="one">%d idea</item>
+        <item quantity="other">%d ideas</item>
+    </plurals>
+    <string name="inbox_waiting">· %d en espera</string>
+    <plurals name="selection_count">
+        <item quantity="one">%d seleccionada</item>
+        <item quantity="other">%d seleccionadas</item>
+    </plurals>
+    <string name="cd_clear_selection">Limpiar selección</string>
+    <string name="cd_delete_selected">Borrar selección</string>
+    <plurals name="delete_notes_title">
+        <item quantity="one">¿Borrar esta idea?</item>
+        <item quantity="other">¿Borrar %d ideas?</item>
+    </plurals>
+    <string name="delete_notes_body">Esto no se puede deshacer.</string>
+    <string name="action_delete">Borrar</string>
+    <string name="action_keep">Conservar</string>
+    <string name="action_archive">Archivar</string>
+    <string name="action_unarchive">Desarchivar</string>
+    <string name="action_pin">Fijar</string>
+    <string name="action_unpin">Desfijar</string>
+    <string name="cd_archive_selected">Archivar selección</string>
+    <string name="cd_pin_selected">Fijar selección</string>
+    <string name="tab_inbox">Bandeja</string>
+    <string name="tab_archived">Archivadas</string>
+
+    <!-- Create note -->
+    <string name="create_title">Nueva idea</string>
+    <string name="cd_back">Atrás</string>
+    <string name="create_title_label">Título (opcional)</string>
+    <string name="create_body_label">¿En qué estás pensando?</string>
+    <string name="create_supporting">Se guarda en este dispositivo. La IA la procesa en segundo plano.</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_saving">Guardando…</string>
+    <string name="create_tagline">Captura en segundos, comprende después.</string>
+
+    <!-- Note detail -->
+    <string name="detail_title">Nota</string>
+    <string name="detail_processing">Comprendiendo esta idea…</string>
+    <string name="action_retry">Reintentar</string>
+    <string name="not_classified">Sin clasificar aún</string>
+    <string name="detail_created">Creada %1$s</string>
+    <string name="detail_title_label">Título</string>
+    <string name="detail_original_label">Idea original</string>
+    <string name="action_save_changes">Guardar cambios</string>
+    <string name="ai_unavailable">No se pudo mostrar la respuesta de la IA.</string>
+    <string name="continue_ai">Continuar con la IA</string>
+    <string name="note_gone">Esta nota ya no existe.</string>
+
+    <!-- Search -->
+    <string name="search_label">Buscar en títulos, ideas, contenido de la IA</string>
+    <string name="cd_clear_search">Limpiar búsqueda</string>
+    <string name="search_hint">Encuentra curiosidades pasadas en títulos, ideas originales, explicaciones de la IA y temas relacionados.</string>
+    <string name="search_no_results">Ninguna idea coincide con «%1$s».</string>
+    <string name="sort_newest">Más recientes primero</string>
+    <string name="sort_oldest">Más antiguas primero</string>
+    <string name="filters_clear">Limpiar</string>
+    <string name="search_today">Hoy</string>
+    <string name="search_yesterday">Ayer</string>
+
+    <!-- Settings -->
+    <string name="section_provider">Proveedor de IA</string>
+    <string name="provider_mock">IA simulada</string>
+    <string name="provider_mock_sub">Integrada. Sin clave, sin red.</string>
+    <string name="provider_gemini">Gemini</string>
+    <string name="provider_gemini_ok">Respuestas reales. Clave configurada.</string>
+    <string name="provider_gemini_missing">Respuestas reales. Falta la clave.</string>
+    <string name="provider_gemini_hint">Agrega GEMINI_API_KEY a local.properties (o al entorno) y recompila. Las notas mostrarán un error hasta entonces.</string>
+    <string name="provider_openrouter">OpenRouter</string>
+    <string name="provider_openrouter_ok">Respuestas reales. Clave configurada.</string>
+    <string name="provider_openrouter_missing">Respuestas reales. Falta la clave.</string>
+    <string name="provider_openrouter_hint">Agrega OPENROUTER_API_KEY a local.properties (o al entorno) y recompila. Claves gratuitas en openrouter.ai/keys. Las notas mostrarán un error hasta entonces.</string>
+    <string name="section_appearance">Apariencia</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_system_sub">Seguir el ajuste del dispositivo.</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    <string name="section_language">Idioma</string>
+    <string name="lang_system">Sistema</string>
+    <string name="lang_system_sub">Seguir el idioma del dispositivo.</string>
+    <string name="lang_english">Inglés</string>
+    <string name="lang_spanish">Español</string>
+    <string name="section_about">Acerca de</string>
+    <string name="about_version">Curio Notepad %1$s</string>
+    <string name="about_body">Prototipo personal. Las notas permanecen en este dispositivo; solo las peticiones a la IA salen de él.</string>
+
+    <!-- Conversation -->
+    <string name="conv_continuing">Continuando de</string>
+    <string name="conv_thinking">Pensando…</string>
+    <string name="conv_hint">Haz una pregunta de seguimiento</string>
+    <string name="cd_send">Enviar</string>
+    <string name="conv_empty_hint">Pregunta lo que sea sobre esta idea — su contexto ya está incluido.</string>
+    <string name="conv_history_title">Conversación</string>
+
+    <!-- AI response card -->
+    <string name="ai_header">Explicación de la IA · %1$s</string>
+
+    <!-- Status and type labels -->
+    <string name="status_pending">Pendiente</string>
+    <string name="status_processing">Procesando</string>
+    <string name="status_answered">Respondida</string>
+    <string name="status_error">Error</string>
+    <string name="type_question">Pregunta</string>
+    <string name="type_concept">Concepto</string>
+    <string name="type_idea">Idea</string>
+    <string name="type_confusion">Confusión</string>
+    <string name="type_topic">Tema</string>
+    <string name="type_claim">Afirmación</string>
+    <string name="type_reflection">Reflexión</string>
+    <string name="type_other">Otro</string>
+
+    <!-- Errors -->
+    <string name="error_missing_api_key">No hay clave configurada para el proveedor de IA elegido. Agrégala a local.properties (o al entorno) y recompila.</string>
+    <string name="error_invalid_api_key">La clave fue rechazada. Revisa la clave del proveedor elegido e inténtalo de nuevo.</string>
+    <string name="error_network">Sin conexión con el servicio de IA. Tu nota está guardada — reintenta cuando vuelvas a tener conexión.</string>
+    <string name="error_timed_out">La IA tardó demasiado en responder. Tu nota está guardada — inténtalo de nuevo.</string>
+    <string name="error_rate_limited">Límite de uso de la IA alcanzado. Espera un minuto y reintenta.</string>
+    <string name="error_invalid_response">La IA devolvió algo inesperado. Tu nota está a salvo — reintenta.</string>
+    <string name="error_service">El servicio de IA devolvió un error. Tu nota está a salvo — reintenta.</string>
+    <string name="error_unknown">No se pudo procesar esta idea. Tu nota está a salvo — reintenta.</string>
+    <string name="error_save_failed">No se pudo guardar esta idea. Inténtalo de nuevo — no se perdió nada.</string>
+    <string name="error_save_changes_failed">No se pudieron guardar los cambios. No se perdió nada.</string>
+    <string name="error_delete_failed">No se pudo borrar esta nota. Inténtalo de nuevo.</string>
+    <string name="error_update_failed">No se pudieron actualizar las notas elegidas. Inténtalo de nuevo.</string>
+    <string name="error_conversation_failed">No se pudo continuar la conversación. Tus notas están a salvo — reintenta.</string>
+    <string name="cd_copy">Copiar</string>
+    <string name="copied_to_clipboard">Copiado al portapapeles</string>
+</resources>

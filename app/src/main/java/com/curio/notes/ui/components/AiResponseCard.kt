@@ -13,10 +13,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.curio.notes.R
 import com.curio.notes.ai.AIResponse
+import com.curio.notes.ai.AiLanguage
 import com.curio.notes.domain.model.NoteType
 import com.curio.notes.ui.util.label
 
@@ -27,8 +29,11 @@ sealed interface AiSection {
     data class Questions(val heading: String, val questions: List<String>) : AiSection
 }
 
-fun sectionsFor(response: AIResponse): List<AiSection> {
-    val headings = headingsFor(response.type)
+fun sectionsFor(
+    response: AIResponse,
+    language: AiLanguage = AiLanguage.ENGLISH
+): List<AiSection> {
+    val headings = headingsFor(response.type, language)
     return buildList {
         response.summary?.takeIf { it.isNotBlank() }?.let {
             add(AiSection.Paragraph(headings.summary, it))
@@ -60,7 +65,10 @@ private data class Headings(
     val followUps: String
 )
 
-private fun headingsFor(type: NoteType): Headings = when (type) {
+private fun headingsFor(type: NoteType, language: AiLanguage): Headings =
+    if (language == AiLanguage.SPANISH) headingsEsFor(type) else headingsEnFor(type)
+
+private fun headingsEnFor(type: NoteType): Headings = when (type) {
     NoteType.QUESTION -> Headings(
         "Quick Answer", "Explanation", "Example",
         "Key Points", "Related Topics", "Follow-up Questions"
@@ -95,8 +103,44 @@ private fun headingsFor(type: NoteType): Headings = when (type) {
     )
 }
 
+private fun headingsEsFor(type: NoteType): Headings = when (type) {
+    NoteType.QUESTION -> Headings(
+        "Respuesta rápida", "Explicación", "Ejemplo",
+        "Puntos clave", "Temas relacionados", "Preguntas de seguimiento"
+    )
+    NoteType.CONCEPT -> Headings(
+        "Definición", "En palabras simples", "Ejemplo",
+        "Puntos clave", "Conceptos relacionados", "Preguntas para explorar"
+    )
+    NoteType.IDEA -> Headings(
+        "Interpretación", "Cómo podría funcionar", "Posible implementación",
+        "Aspectos a ponderar", "Temas relacionados", "Posibles próximos pasos"
+    )
+    NoteType.CONFUSION -> Headings(
+        "Lo que parece confuso", "Paso a paso", "Ejemplo",
+        "Puntos clave", "Temas relacionados", "Preguntas para explorar"
+    )
+    NoteType.TOPIC -> Headings(
+        "Panorama", "Conceptos clave", "Ejemplos",
+        "Ruta de aprendizaje", "Temas relacionados", "Preguntas de seguimiento"
+    )
+    NoteType.CLAIM -> Headings(
+        "La afirmación", "Lo que se sabe", "Ejemplos",
+        "Contexto y límites", "Conceptos relacionados", "Preguntas de seguimiento"
+    )
+    NoteType.REFLECTION -> Headings(
+        "Interpretación", "Distintas miradas", "Ejemplos",
+        "Puntos a considerar", "Temas relacionados", "Preguntas para reflexionar"
+    )
+    NoteType.OTHER -> Headings(
+        "Resumen", "Detalles", "Ejemplos",
+        "Puntos clave", "Temas relacionados", "Preguntas de seguimiento"
+    )
+}
+
 @Composable
 fun AiResponseCard(response: AIResponse, modifier: Modifier = Modifier) {
+    val language = appAiLanguage()
     Card(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -108,13 +152,26 @@ fun AiResponseCard(response: AIResponse, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                CopyIconButton(text = formatAiResponse(response, includeFollowUpQuestions = false))
+                CopyIconButton(
+                    text = formatAiResponse(
+                        response,
+                        includeFollowUpQuestions = false,
+                        language = language
+                    )
+                )
             }
-            sectionsFor(response).forEach { section ->
+            sectionsFor(response, language).forEach { section ->
                 AiSectionContent(section)
             }
         }
     }
+}
+
+/** Matches the AI content language to the UI locale. */
+@Composable
+private fun appAiLanguage(): AiLanguage {
+    val locale = LocalContext.current.resources.configuration.locales[0]
+    return if (locale.language.startsWith("es")) AiLanguage.SPANISH else AiLanguage.ENGLISH
 }
 
 @Composable
@@ -232,9 +289,13 @@ private fun SectionHeadingRow(
     }
 }
 
-fun formatAiResponse(response: AIResponse, includeFollowUpQuestions: Boolean = true): String = buildString {
+fun formatAiResponse(
+    response: AIResponse,
+    includeFollowUpQuestions: Boolean = true,
+    language: AiLanguage = AiLanguage.ENGLISH
+): String = buildString {
     appendLine(response.title)
-    sectionsFor(response).forEach { section ->
+    sectionsFor(response, language).forEach { section ->
         appendLine()
         when (section) {
             is AiSection.Paragraph -> {

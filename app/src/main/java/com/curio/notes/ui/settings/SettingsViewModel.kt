@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.curio.notes.domain.model.AiProviderChoice
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
 import com.curio.notes.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,12 +24,19 @@ class SettingsViewModel(
     val aiProvider: StateFlow<AiProviderChoice> = settingsRepository.observeAiProvider()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AiProviderChoice.MOCK)
 
+    val language: StateFlow<AppLanguage> = settingsRepository.observeLanguage()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppLanguage.SYSTEM)
+
     fun setTheme(theme: AppTheme) {
         viewModelScope.launch { settingsRepository.setTheme(theme) }
     }
 
     fun setAiProvider(choice: AiProviderChoice) {
         viewModelScope.launch { settingsRepository.setAiProvider(choice) }
+    }
+
+    fun setLanguage(language: AppLanguage) {
+        viewModelScope.launch { settingsRepository.setLanguage(language) }
     }
 
     companion object {

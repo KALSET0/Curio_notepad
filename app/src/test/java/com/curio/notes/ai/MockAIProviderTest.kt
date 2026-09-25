@@ -1,7 +1,9 @@
 package com.curio.notes.ai
 
 import com.curio.notes.ai.providers.MockAIProvider
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.NoteType
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -88,5 +90,52 @@ class MockAIProviderTest {
         assertEquals(NoteType.OTHER, response.type)
         assertTrue(response.title.isNotBlank())
         assertTrue(response.title.length <= 70)
+    }
+
+    @Test
+    fun `spanish input classifies and answers in spanish`() = runTest {
+        val spanish = MockAIProvider(
+            delayMillis = 0L,
+            language = flowOf(AppLanguage.SPANISH)
+        )
+        val cases = mapOf(
+            "¿Qué es la fotosíntesis?" to NoteType.QUESTION,
+            "No entiendo cómo funcionan los impuestos" to NoteType.CONFUSION,
+            "Qué pasaría si construimos un rastreador de hábitos" to NoteType.IDEA,
+            "Creo que el trabajo remoto cambió mi lectura" to NoteType.REFLECTION,
+            "Quiero investigar la jardinería urbana" to NoteType.TOPIC,
+            "¿Es verdad que el café frena el crecimiento?" to NoteType.QUESTION,
+            "Define la fotosíntesis" to NoteType.CONCEPT
+        )
+        for ((input, expected) in cases) {
+            val response = spanish.classifyAndAnswer(input)
+            assertEquals("input: $input", expected, response.type)
+            assertTrue(
+                "summary not spanish for: $input",
+                response.summary!!.lowercase().contains("simulad")
+            )
+        }
+    }
+
+    @Test
+    fun `spanish conversation reply is translated`() = runTest {
+        val spanish = MockAIProvider(
+            delayMillis = 0L,
+            language = flowOf(AppLanguage.SPANISH)
+        )
+        val context = ConversationContext(
+            originalText = "Define la fotosíntesis",
+            type = NoteType.CONCEPT,
+            summary = "Las plantas producen alimento.",
+            relatedTopics = listOf("Clorofila")
+        )
+        val reply = spanish.continueConversation(
+            context,
+            listOf(ChatMessage(ChatRole.USER, "Hola")),
+            "Cuéntame más"
+        )
+
+        assertTrue(reply.contains("Cuéntame más"))
+        assertTrue(reply.lowercase().contains("simulada"))
     }
 }

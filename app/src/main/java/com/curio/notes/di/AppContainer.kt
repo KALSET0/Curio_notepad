@@ -59,14 +59,16 @@ class AppContainer(context: Context) {
         SwitchingAIProvider(
             settingsRepository = settingsRepository,
             scope = applicationScope,
-            mock = MockAIProvider(),
+            mock = MockAIProvider(language = settingsRepository.observeLanguage()),
             gemini = GeminiAIProvider(
                 apiKey = BuildConfig.GEMINI_API_KEY,
-                client = okHttpClient
+                client = okHttpClient,
+                language = settingsRepository.observeLanguage()
             ),
             openRouter = OpenRouterAIProvider(
                 apiKey = BuildConfig.OPENROUTER_API_KEY,
-                client = okHttpClient
+                client = okHttpClient,
+                language = settingsRepository.observeLanguage()
             )
         )
     }

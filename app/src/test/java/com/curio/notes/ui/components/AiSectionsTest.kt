@@ -1,6 +1,7 @@
 package com.curio.notes.ui.components
 
 import com.curio.notes.ai.AIResponse
+import com.curio.notes.ai.AiLanguage
 import com.curio.notes.domain.model.NoteType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -122,5 +123,30 @@ class AiSectionsTest {
         assertTrue(formatted.contains("Short answer."))
         assertTrue(!formatted.contains("fq"))
         assertTrue(!formatted.contains("Follow-up Questions"))
+    }
+
+    @Test
+    fun `spanish headings are translated`() {
+        val sections = sectionsFor(
+            AIResponse(type = NoteType.QUESTION, title = "t", summary = "s"),
+            AiLanguage.SPANISH
+        )
+        val first = sections.single()
+        assertTrue(first is AiSection.Paragraph)
+        assertEquals("Respuesta rápida", (first as AiSection.Paragraph).heading)
+    }
+
+    @Test
+    fun `spanish formatted response uses spanish headings`() {
+        val response = AIResponse(
+            type = NoteType.CONCEPT,
+            title = "Fotosíntesis",
+            summary = "Definición.",
+            followUpQuestions = listOf("fq")
+        )
+        val formatted = formatAiResponse(response, language = AiLanguage.SPANISH)
+
+        assertTrue(formatted.contains("Definición"))
+        assertTrue(!formatted.contains("Definition"))
     }
 }

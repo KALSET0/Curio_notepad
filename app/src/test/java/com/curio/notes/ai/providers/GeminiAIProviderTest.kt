@@ -6,7 +6,9 @@ import com.curio.notes.ai.AiJson
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
+import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.NoteType
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import okhttp3.OkHttpClient
@@ -76,6 +78,28 @@ class GeminiAIProviderTest {
             provider(apiKey = "").classifyAndAnswer("Hello?")
         }
         assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun `spanish language sends spanish system prompt`() = runTest {
+        val expected = AIResponse(type = NoteType.OTHER, title = "t")
+        val envelope = """{"candidates":[{"content":{"parts":[{"text":${
+            AiJson.encodeToString(AiJson.encodeToString(expected))
+        }}]},"finishReason":"STOP"}]}"""
+        server.enqueue(MockResponse().setResponseCode(200).setBody(envelope))
+
+        val spanish = GeminiAIProvider(
+            apiKey = "test-key",
+            baseUrl = server.url("/").toString(),
+            language = flowOf(AppLanguage.SPANISH)
+        )
+        spanish.classifyAndAnswer("¿Qué es X?")
+
+        val recorded = server.takeRequest(5, TimeUnit.SECONDS)
+        assertNotNull(recorded)
+        val requestBody = recorded!!.body.readUtf8()
+        assertTrue(requestBody.contains("espa"))
+        assertTrue(!requestBody.contains("Guiding principle"))
     }
 
     @Test
