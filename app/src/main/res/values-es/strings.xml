@@ -9,6 +9,7 @@
     <string name="cd_search">Buscar</string>
     <string name="cd_settings">Ajustes</string>
     <string name="cd_create_note">Crear nota</string>
+    <string name="fab_capture">Capturar</string>
     <string name="inbox_empty_body">Tu bandeja está vacía. Toca + para capturar tu primera idea.</string>
     <string name="archived_empty_body">No hay ideas archivadas. Mantén presionada una nota de la bandeja para seleccionarla y archivarla.</string>
     <plurals name="inbox_thoughts">

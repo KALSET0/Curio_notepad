@@ -2,6 +2,7 @@ package com.curio.notes.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LinearProgressIndicator
@@ -21,9 +22,9 @@ fun EmptyState(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.Center,
         modifier = modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(Spacing.xl)
     ) {
         Text(text = title, style = MaterialTheme.typography.titleMedium)
