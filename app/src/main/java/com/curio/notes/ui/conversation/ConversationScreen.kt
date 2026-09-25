@@ -90,7 +90,14 @@ fun ConversationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.continue_ai)) },
+                title = {
+                    Text(
+                        text = note?.let { stringResource(R.string.session_title, it.title) }
+                            ?: stringResource(R.string.continue_ai),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(

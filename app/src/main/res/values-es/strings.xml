@@ -50,6 +50,7 @@
 
     <!-- Note detail -->
     <string name="detail_title">Nota</string>
+    <string name="detail_title_with_name">Nota - %1$s</string>
     <string name="detail_processing">Comprendiendo esta idea…</string>
     <string name="action_retry">Reintentar</string>
     <string name="not_classified">Sin clasificar aún</string>
@@ -60,6 +61,7 @@
     <string name="action_reanalyze">Re-analizar con IA</string>
     <string name="ai_unavailable">No se pudo mostrar la respuesta de la IA.</string>
     <string name="continue_ai">Continuar con la IA</string>
+    <string name="session_title">Conversación - %1$s</string>
     <string name="note_gone">Esta nota ya no existe.</string>
 
     <!-- Search -->
