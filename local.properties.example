@@ -1,0 +1,11 @@
+# Example local configuration. Copy to local.properties and adjust paths.
+# This file is safe to commit; never put real secrets in committed files.
+sdk.dir=C\:\\Users\\USERNAME\\AppData\\Local\\Android\\Sdk
+# Gemini API key for the real AI provider (Phase 7+).
+# Get one at https://aistudio.google.com/apikey, then set it here
+# or export GEMINI_API_KEY in your environment. Leave empty to use Mock AI.
+# This file is only an example — the real key belongs in local.properties (git-ignored).
+GEMINI_API_KEY=
+# OpenRouter key for the OpenRouter provider. Free at https://openrouter.ai/keys,
+# then set it here or export OPENROUTER_API_KEY in your environment.
+OPENROUTER_API_KEY=
