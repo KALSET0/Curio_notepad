@@ -49,6 +49,11 @@ android {
 
     buildTypes {
         release {
+            // Internal testing only: sign release with the debug key so the
+            // APK installs over debug builds (same signature, data kept) and
+            // animation fps can be judged without debuggable overhead.
+            // Play Store releases need a real keystore here instead.
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
