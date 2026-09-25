@@ -1,5 +1,6 @@
 package com.curio.notes.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -14,11 +15,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.curio.notes.R
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiLanguage
+import com.curio.notes.ai.AiSource
 import com.curio.notes.domain.model.NoteType
 import com.curio.notes.ui.util.label
 
@@ -27,6 +31,7 @@ sealed interface AiSection {
     data class Bullets(val heading: String, val items: List<String>) : AiSection
     data class Chips(val heading: String, val topics: List<String>) : AiSection
     data class Questions(val heading: String, val questions: List<String>) : AiSection
+    data class Sources(val heading: String, val sources: List<AiSource>) : AiSection
 }
 
 fun sectionsFor(
@@ -53,8 +58,14 @@ fun sectionsFor(
         response.followUpQuestions.takeIf { it.isNotEmpty() }?.let {
             add(AiSection.Questions(headings.followUps, it))
         }
+        response.sources.takeIf { it.isNotEmpty() }?.let {
+            add(AiSection.Sources(sourcesHeading(language), it))
+        }
     }
 }
+
+private fun sourcesHeading(language: AiLanguage): String =
+    if (language == AiLanguage.SPANISH) "Fuentes" else "Sources"
 
 private data class Headings(
     val summary: String,
@@ -261,6 +272,32 @@ private fun AiSectionContent(section: AiSection) {
                 }
             }
         }
+        is AiSection.Sources -> {
+            val uriHandler = LocalUriHandler.current
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SectionHeadingRow(
+                    heading = section.heading,
+                    copyText = buildString {
+                        appendLine(section.heading)
+                        section.sources.forEach { appendLine("- ${it.title} (${it.url})") }
+                    }.trim()
+                )
+                section.sources.forEach { source ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(text = "•", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = source.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { uriHandler.openUri(source.url) }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -317,6 +354,10 @@ fun formatAiResponse(
                         appendLine("${index + 1}. $question")
                     }
                 }
+            }
+            is AiSection.Sources -> {
+                appendLine(section.heading)
+                section.sources.forEach { appendLine("- ${it.title} (${it.url})") }
             }
         }
     }

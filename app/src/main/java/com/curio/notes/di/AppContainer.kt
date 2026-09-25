@@ -8,6 +8,7 @@ import com.curio.notes.ai.SwitchingAIProvider
 import com.curio.notes.ai.providers.GeminiAIProvider
 import com.curio.notes.ai.providers.MockAIProvider
 import com.curio.notes.ai.providers.OpenRouterAIProvider
+import com.curio.notes.ai.search.TavilyWebSearch
 import com.curio.notes.data.local.database.CurioDatabase
 import com.curio.notes.data.local.database.MIGRATION_1_2
 import com.curio.notes.data.local.database.MIGRATION_2_3
@@ -55,20 +56,34 @@ class AppContainer(context: Context) {
 
     // Routes every AI call to the provider chosen in Settings. Mock is the
     // safe default; Gemini needs GEMINI_API_KEY in local.properties.
+    // Web search (Tavily) is opt-in per note/conversation turn: the providers
+    // ask the gatekeeper first, and only search when it says so.
     val aiProvider: AIProvider by lazy {
+        val webSearch = TavilyWebSearch(
+            apiKey = BuildConfig.TAVILY_API_KEY,
+            client = okHttpClient
+        )
+        val searchEnabled = settingsRepository.observeWebSearch()
         SwitchingAIProvider(
             settingsRepository = settingsRepository,
             scope = applicationScope,
-            mock = MockAIProvider(language = settingsRepository.observeLanguage()),
+            mock = MockAIProvider(
+                language = settingsRepository.observeLanguage(),
+                webSearchEnabled = searchEnabled
+            ),
             gemini = GeminiAIProvider(
                 apiKey = BuildConfig.GEMINI_API_KEY,
                 client = okHttpClient,
-                language = settingsRepository.observeLanguage()
+                language = settingsRepository.observeLanguage(),
+                webSearch = webSearch,
+                webSearchEnabled = searchEnabled
             ),
             openRouter = OpenRouterAIProvider(
                 apiKey = BuildConfig.OPENROUTER_API_KEY,
                 client = okHttpClient,
-                language = settingsRepository.observeLanguage()
+                language = settingsRepository.observeLanguage(),
+                webSearch = webSearch,
+                webSearchEnabled = searchEnabled
             )
         )
     }

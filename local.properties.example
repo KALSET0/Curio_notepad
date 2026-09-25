@@ -9,3 +9,7 @@ GEMINI_API_KEY=
 # OpenRouter key for the OpenRouter provider. Free at https://openrouter.ai/keys,
 # then set it here or export OPENROUTER_API_KEY in your environment.
 OPENROUTER_API_KEY=
+# Tavily key for web search (Settings → Web search). Free at https://tavily.com,
+# then set it here or export TAVILY_API_KEY in your environment.
+# The AI only searches when its gatekeeper decides it needs fresh facts.
+TAVILY_API_KEY=

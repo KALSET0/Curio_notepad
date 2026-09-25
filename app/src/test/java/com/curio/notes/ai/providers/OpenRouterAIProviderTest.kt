@@ -3,11 +3,15 @@ package com.curio.notes.ai.providers
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiException
 import com.curio.notes.ai.AiJson
+import com.curio.notes.ai.AiSource
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
+import com.curio.notes.ai.search.GatekeeperDecision
+import com.curio.notes.ai.search.WebResult
 import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.NoteType
+import com.curio.notes.testing.FakeWebSearch
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
@@ -99,6 +103,93 @@ class OpenRouterAIProviderTest {
         val requestBody = recorded!!.body.readUtf8()
         assertTrue(requestBody.contains("espa"))
         assertTrue(!requestBody.contains("Guiding principle"))
+    }
+
+    private fun choicesEnvelope(innerJson: String) =
+        """{"choices":[{"message":{"role":"assistant","content":$innerJson}}]}"""
+
+    private fun searchingProvider(web: FakeWebSearch) = OpenRouterAIProvider(
+        apiKey = "test-key",
+        baseUrl = server.url("/").toString(),
+        webSearch = web,
+        webSearchEnabled = flowOf(true)
+    )
+
+    @Test
+    fun `gatekeeper approval searches and verifies sources`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope(
+                    AiJson.encodeToString(AiJson.encodeToString(GatekeeperDecision(true, "coffee")))
+                )
+            )
+        )
+        val expected = AIResponse(
+            type = NoteType.OTHER,
+            title = "t",
+            sources = listOf(
+                AiSource("Real", "https://real.com/a"),
+                AiSource("Invented", "https://fake.example/x")
+            )
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope(AiJson.encodeToString(AiJson.encodeToString(expected)))
+            )
+        )
+        val web = FakeWebSearch(
+            results = listOf(WebResult("Real", "https://real.com/a", "s"))
+        )
+
+        val actual = searchingProvider(web).classifyAndAnswer("Is coffee talk true?")
+
+        assertEquals(listOf("coffee"), web.queries)
+        assertEquals(listOf(AiSource("Real", "https://real.com/a")), actual.sources)
+        server.takeRequest(5, TimeUnit.SECONDS)
+        val answerRequest = server.takeRequest(5, TimeUnit.SECONDS)
+        assertNotNull(answerRequest)
+        assertTrue(answerRequest!!.body.readUtf8().contains("https://real.com/a"))
+    }
+
+    @Test
+    fun `first conversation turn searches once`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope(
+                    AiJson.encodeToString(AiJson.encodeToString(GatekeeperDecision(true, "coffee")))
+                )
+            )
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope("\"Grounded answer.\"")
+            )
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                choicesEnvelope("\"Follow-up answer.\"")
+            )
+        )
+        val web = FakeWebSearch(
+            results = listOf(WebResult("Real", "https://real.com/a", "s"))
+        )
+        val provider = searchingProvider(web)
+        val context = ConversationContext("Is coffee true?", null, null)
+
+        val first = provider.continueConversation(context, emptyList(), "Tell me more")
+        val second = provider.continueConversation(
+            context,
+            listOf(
+                com.curio.notes.ai.ChatMessage(com.curio.notes.ai.ChatRole.USER, "Tell me more"),
+                com.curio.notes.ai.ChatMessage(com.curio.notes.ai.ChatRole.MODEL, first)
+            ),
+            "And more?"
+        )
+
+        assertEquals("Grounded answer.", first)
+        assertEquals("Follow-up answer.", second)
+        assertEquals(listOf("coffee"), web.queries)
+        assertEquals(3, server.requestCount)
     }
 
     @Test

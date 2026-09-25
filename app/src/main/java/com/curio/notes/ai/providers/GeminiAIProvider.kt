@@ -4,12 +4,21 @@ import com.curio.notes.ai.AIProvider
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiException
 import com.curio.notes.ai.AiJson
+import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
 import com.curio.notes.ai.prompts.CurioPrompts
+import com.curio.notes.ai.search.GatekeeperDecision
+import com.curio.notes.ai.search.TavilyConfig
+import com.curio.notes.ai.search.WebResult
+import com.curio.notes.ai.search.WebSearchProvider
+import com.curio.notes.ai.search.executeSearch
+import com.curio.notes.ai.search.parseGatekeeperDecision
+import com.curio.notes.ai.withVerifiedSources
 import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.NoteType
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -39,12 +48,18 @@ class GeminiAIProvider(
     private val model: String = GeminiConfig.MODEL,
     private val baseUrl: String = GeminiConfig.BASE_URL,
     private val client: OkHttpClient = defaultClient(),
-    private val language: Flow<AppLanguage> = flowOf(AppLanguage.ENGLISH)
+    private val language: Flow<AppLanguage> = flowOf(AppLanguage.ENGLISH),
+    private val webSearch: WebSearchProvider? = null,
+    private val webSearchEnabled: Flow<Boolean> = flowOf(false)
 ) : AIProvider {
 
     override suspend fun classifyAndAnswer(input: String): AIResponse {
         if (apiKey.isBlank()) throw AiException.MissingApiKey()
         val aiLanguage = language.first().toAiLanguage()
+        val sources = researchWithPrompt(
+            CurioPrompts.gatekeeperPromptFor(input, aiLanguage),
+            aiLanguage
+        )
         val body = AiJson.encodeToString(
             GeminiRequest(
                 systemInstruction = GeminiContent(
@@ -53,7 +68,9 @@ class GeminiAIProvider(
                 contents = listOf(
                     GeminiContent(
                         role = "user",
-                        parts = listOf(GeminiPart(CurioPrompts.userPromptFor(input, aiLanguage)))
+                        parts = listOf(
+                            GeminiPart(CurioPrompts.userPromptFor(input, aiLanguage, sources))
+                        )
                     )
                 ),
                 generationConfig = GeminiGenerationConfig(
@@ -66,7 +83,7 @@ class GeminiAIProvider(
         )
         val text = postText(body)
         return try {
-            AiJson.decodeFromString<AIResponse>(text)
+            AiJson.decodeFromString<AIResponse>(text).withVerifiedSources(sources)
         } catch (e: SerializationException) {
             throw AiException.InvalidResponse(e)
         } catch (e: IllegalArgumentException) {
@@ -81,12 +98,24 @@ class GeminiAIProvider(
     ): String {
         if (apiKey.isBlank()) throw AiException.MissingApiKey()
         val aiLanguage = language.first().toAiLanguage()
+        // The gatekeeper decides once, on the first turn. Later turns reuse
+        // the grounded answer already present in history.
+        val sources = if (history.isEmpty()) {
+            researchWithPrompt(
+                CurioPrompts.gatekeeperPromptForConversation(context, input, aiLanguage),
+                aiLanguage
+            )
+        } else {
+            emptyList()
+        }
         val contents = buildList {
             add(
                 GeminiContent(
                     role = "user",
                     parts = listOf(
-                        GeminiPart(CurioPrompts.conversationContextFor(context, aiLanguage))
+                        GeminiPart(
+                            CurioPrompts.conversationContextFor(context, aiLanguage, sources)
+                        )
                     )
                 )
             )
@@ -140,6 +169,70 @@ class GeminiAIProvider(
         }
     }
 
+    // Runs the gatekeeper mini-call and, when approved, the web search.
+    // Gatekeeper trouble degrades to no sources; key problems surface.
+    private suspend fun researchWithPrompt(
+        gatekeeperUserPrompt: String,
+        aiLanguage: AiLanguage
+    ): List<WebResult> {
+        val engine = webSearch ?: return emptyList()
+        if (!webSearchEnabled.first()) return emptyList()
+        val decision = try {
+            askGatekeeper(gatekeeperUserPrompt, aiLanguage)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return emptyList()
+        }
+        if (!decision.need_search) return emptyList()
+        return engine.executeSearch(decision.query, TavilyConfig.MAX_RESULTS, aiLanguage)
+    }
+
+    private suspend fun askGatekeeper(
+        gatekeeperUserPrompt: String,
+        aiLanguage: AiLanguage
+    ): GatekeeperDecision {
+        val body = AiJson.encodeToString(
+            GeminiRequest(
+                systemInstruction = GeminiContent(
+                    parts = listOf(
+                        GeminiPart(CurioPrompts.gatekeeperSystemFor(aiLanguage))
+                    )
+                ),
+                contents = listOf(
+                    GeminiContent(
+                        role = "user",
+                        parts = listOf(GeminiPart(gatekeeperUserPrompt))
+                    )
+                ),
+                generationConfig = GeminiGenerationConfig(
+                    responseMimeType = "application/json",
+                    responseSchema = gatekeeperSchema(),
+                    temperature = 0.2,
+                    maxOutputTokens = 128
+                )
+            )
+        )
+        return parseGatekeeperDecision(postText(body))
+    }
+
+    private fun gatekeeperSchema(): JsonObject = buildJsonObject {
+        put("type", "OBJECT")
+        put(
+            "properties",
+            buildJsonObject {
+                put("need_search", buildJsonObject { put("type", "BOOLEAN") })
+                put("query", buildJsonObject { put("type", "STRING") })
+            }
+        )
+        put(
+            "required",
+            buildJsonArray {
+                add("need_search")
+                add("query")
+            }
+        )
+    }
     private suspend fun execute(request: Request): String =
         suspendCancellableCoroutine { continuation ->
             val call = client.newCall(request)
@@ -223,6 +316,32 @@ class GeminiAIProvider(
                     put("keyPoints", stringListField())
                     put("relatedTopics", stringListField())
                     put("followUpQuestions", stringListField())
+                    put(
+                        "sources",
+                        buildJsonObject {
+                            put("type", "ARRAY")
+                            put(
+                                "items",
+                                buildJsonObject {
+                                    put("type", "OBJECT")
+                                    put(
+                                        "properties",
+                                        buildJsonObject {
+                                            put("title", stringField())
+                                            put("url", stringField())
+                                        }
+                                    )
+                                    put(
+                                        "required",
+                                        buildJsonArray {
+                                            add("title")
+                                            add("url")
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    )
                 }
             )
             put(
@@ -236,6 +355,7 @@ class GeminiAIProvider(
                     add("keyPoints")
                     add("relatedTopics")
                     add("followUpQuestions")
+                    add("sources")
                 }
             )
         }

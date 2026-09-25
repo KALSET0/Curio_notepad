@@ -3,11 +3,15 @@ package com.curio.notes.ai.providers
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiException
 import com.curio.notes.ai.AiJson
+import com.curio.notes.ai.AiSource
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
+import com.curio.notes.ai.search.GatekeeperDecision
+import com.curio.notes.ai.search.WebResult
 import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.NoteType
+import com.curio.notes.testing.FakeWebSearch
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
@@ -100,6 +104,104 @@ class GeminiAIProviderTest {
         val requestBody = recorded!!.body.readUtf8()
         assertTrue(requestBody.contains("espa"))
         assertTrue(!requestBody.contains("Guiding principle"))
+    }
+
+    private fun geminiEnvelope(innerJson: String) =
+        """{"candidates":[{"content":{"parts":[{"text":$innerJson}]},"finishReason":"STOP"}]}"""
+
+    private fun searchingProvider(web: FakeWebSearch) = GeminiAIProvider(
+        apiKey = "test-key",
+        baseUrl = server.url("/").toString(),
+        webSearch = web,
+        webSearchEnabled = flowOf(true)
+    )
+
+    @Test
+    fun `gatekeeper approval searches and verifies sources`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                geminiEnvelope(
+                    AiJson.encodeToString(AiJson.encodeToString(GatekeeperDecision(true, "coffee")))
+                )
+            )
+        )
+        val expected = AIResponse(
+            type = NoteType.OTHER,
+            title = "t",
+            sources = listOf(
+                AiSource("Real", "https://real.com/a"),
+                AiSource("Invented", "https://fake.example/x")
+            )
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                geminiEnvelope(AiJson.encodeToString(AiJson.encodeToString(expected)))
+            )
+        )
+        val web = FakeWebSearch(
+            results = listOf(WebResult("Real", "https://real.com/a", "s"))
+        )
+
+        val actual = searchingProvider(web).classifyAndAnswer("Is coffee talk true?")
+
+        assertEquals(listOf("coffee"), web.queries)
+        assertEquals(listOf(AiSource("Real", "https://real.com/a")), actual.sources)
+        server.takeRequest(5, TimeUnit.SECONDS)
+        val answerRequest = server.takeRequest(5, TimeUnit.SECONDS)
+        assertNotNull(answerRequest)
+        val answerBody = answerRequest!!.body.readUtf8()
+        assertTrue(answerBody.contains("https://real.com/a"))
+        assertTrue(answerBody.contains("sources"))
+    }
+
+    @Test
+    fun `gatekeeper denial skips search`() = runTest {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                geminiEnvelope(
+                    AiJson.encodeToString(AiJson.encodeToString(GatekeeperDecision(false, "")))
+                )
+            )
+        )
+        val expected = AIResponse(type = NoteType.OTHER, title = "t")
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                geminiEnvelope(AiJson.encodeToString(AiJson.encodeToString(expected)))
+            )
+        )
+        val web = FakeWebSearch(
+            results = listOf(WebResult("Real", "https://real.com/a", "s"))
+        )
+
+        val actual = searchingProvider(web).classifyAndAnswer("Buy milk tomorrow")
+
+        assertTrue(web.queries.isEmpty())
+        assertTrue(actual.sources.isEmpty())
+        assertEquals(2, server.requestCount)
+    }
+
+    @Test
+    fun `disabled search makes a single call`() = runTest {
+        val expected = AIResponse(type = NoteType.OTHER, title = "t")
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                geminiEnvelope(AiJson.encodeToString(AiJson.encodeToString(expected)))
+            )
+        )
+        val web = FakeWebSearch(
+            results = listOf(WebResult("Real", "https://real.com/a", "s"))
+        )
+        val provider = GeminiAIProvider(
+            apiKey = "test-key",
+            baseUrl = server.url("/").toString(),
+            webSearch = web,
+            webSearchEnabled = flowOf(false)
+        )
+
+        provider.classifyAndAnswer("Is coffee talk true?")
+
+        assertTrue(web.queries.isEmpty())
+        assertEquals(1, server.requestCount)
     }
 
     @Test

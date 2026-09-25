@@ -3,6 +3,7 @@ package com.curio.notes.data.preferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -17,6 +18,7 @@ private const val SETTINGS_NAME = "curio_settings"
 private val THEME_KEY = stringPreferencesKey("app_theme")
 private val AI_PROVIDER_KEY = stringPreferencesKey("ai_provider")
 private val LANGUAGE_KEY = stringPreferencesKey("app_language")
+private val WEB_SEARCH_KEY = booleanPreferencesKey("web_search")
 
 val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = SETTINGS_NAME)
 
@@ -51,5 +53,13 @@ class SettingsRepositoryImpl(
 
     override suspend fun setLanguage(language: AppLanguage) {
         dataStore.edit { prefs -> prefs[LANGUAGE_KEY] = language.name }
+    }
+
+    override fun observeWebSearch(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[WEB_SEARCH_KEY] ?: false
+    }
+
+    override suspend fun setWebSearchEnabled(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[WEB_SEARCH_KEY] = enabled }
     }
 }

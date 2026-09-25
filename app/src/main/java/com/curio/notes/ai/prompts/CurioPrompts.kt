@@ -2,6 +2,7 @@ package com.curio.notes.ai.prompts
 
 import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ConversationContext
+import com.curio.notes.ai.search.WebResult
 
 object CurioPrompts {
     // The single source of AI behavior. Every provider receives this;
@@ -19,14 +20,17 @@ object CurioPrompts {
 
     fun userPromptFor(
         input: String,
-        language: AiLanguage = AiLanguage.ENGLISH
+        language: AiLanguage = AiLanguage.ENGLISH,
+        sources: List<WebResult> = emptyList()
     ): String = when (language) {
         AiLanguage.ENGLISH ->
             "The user's captured thought:\n\"\"\"\n$input\n\"\"\"\n\n" +
-                "Classify it and respond with a single JSON object matching the required schema."
+                "Classify it and respond with a single JSON object matching the required schema." +
+                sourcesBlockFor(sources, language)
         AiLanguage.SPANISH ->
             "La idea capturada por el usuario:\n\"\"\"\n$input\n\"\"\"\n\n" +
-                "Clasifícala y responde con un único objeto JSON que siga el esquema requerido."
+                "Clasifícala y responde con un único objeto JSON que siga el esquema requerido." +
+                sourcesBlockFor(sources, language)
     }
 
     fun continuationSystemFor(language: AiLanguage = AiLanguage.ENGLISH): String = when (language) {
@@ -43,34 +47,112 @@ object CurioPrompts {
 
     fun conversationContextFor(
         context: ConversationContext,
-        language: AiLanguage = AiLanguage.ENGLISH
+        language: AiLanguage = AiLanguage.ENGLISH,
+        sources: List<WebResult> = emptyList()
     ): String = buildString {
         if (language == AiLanguage.SPANISH) {
             appendLine("Continuando de esta idea capturada:")
-            appendLine("\"\"\"")
-            appendLine(context.originalText)
-            appendLine("\"\"\"")
-            context.type?.let { appendLine("Tipo detectado: $it") }
-            context.summary?.takeIf { it.isNotBlank() }?.let {
-                appendLine("Resumen anterior: $it")
-            }
-            if (context.relatedTopics.isNotEmpty()) {
-                appendLine("Temas relacionados: " + context.relatedTopics.joinToString(", "))
-            }
+            append(contextBlockFor(context, language))
+            append(sourcesBlockFor(sources, language))
             append("Responde las preguntas de seguimiento que vienen a continuación.")
         } else {
             appendLine("Continuing from this captured thought:")
-            appendLine("\"\"\"")
-            appendLine(context.originalText)
-            appendLine("\"\"\"")
-            context.type?.let { appendLine("Detected type: $it") }
-            context.summary?.takeIf { it.isNotBlank() }?.let {
-                appendLine("Previous summary: $it")
-            }
-            if (context.relatedTopics.isNotEmpty()) {
-                appendLine("Related topics: " + context.relatedTopics.joinToString(", "))
-            }
+            append(contextBlockFor(context, language))
+            append(sourcesBlockFor(sources, language))
             append("Answer the follow-up questions that come next.")
+        }
+    }
+
+    fun gatekeeperSystemFor(language: AiLanguage = AiLanguage.ENGLISH): String = when (language) {
+        AiLanguage.ENGLISH -> GATEKEEPER_SYSTEM_EN
+        AiLanguage.SPANISH -> GATEKEEPER_SYSTEM_ES
+    }
+
+    fun gatekeeperPromptFor(
+        input: String,
+        language: AiLanguage = AiLanguage.ENGLISH
+    ): String = when (language) {
+        AiLanguage.ENGLISH ->
+            "The captured thought:\n\"\"\"\n$input\n\"\"\"\n\n" +
+                "Decide whether answering well needs a web search. " +
+                "Respond with the decision JSON object."
+        AiLanguage.SPANISH ->
+            "La idea capturada:\n\"\"\"\n$input\n\"\"\"\n\n" +
+                "Decide si responder bien requiere una búsqueda web. " +
+                "Responde con el objeto JSON de decisión."
+    }
+
+    fun gatekeeperPromptForConversation(
+        context: ConversationContext,
+        message: String,
+        language: AiLanguage = AiLanguage.ENGLISH
+    ): String = buildString {
+        if (language == AiLanguage.SPANISH) {
+            appendLine("La idea capturada y su contexto:")
+            append(contextBlockFor(context, language))
+            appendLine("El primer seguimiento del usuario:")
+            appendLine("\"\"\"")
+            appendLine(message)
+            appendLine("\"\"\"")
+            append(
+                "Decide si responder bien requiere una búsqueda web. " +
+                    "Responde con el objeto JSON de decisión."
+            )
+        } else {
+            appendLine("The captured thought and its context:")
+            append(contextBlockFor(context, language))
+            appendLine("The user's first follow-up:")
+            appendLine("\"\"\"")
+            appendLine(message)
+            appendLine("\"\"\"")
+            append(
+                "Decide whether answering well needs a web search. " +
+                    "Respond with the decision JSON object."
+            )
+        }
+    }
+
+    private fun sourcesBlockFor(
+        sources: List<WebResult>,
+        language: AiLanguage
+    ): String {
+        if (sources.isEmpty()) return ""
+        val listed = sources.mapIndexed { index, result ->
+            "${index + 1}. ${result.title} — ${result.snippet} (${result.url})"
+        }.joinToString("\n")
+        return if (language == AiLanguage.SPANISH) {
+            "\n\nResultados de búsqueda web para esta idea " +
+                "(usa solo lo que aporte; cita las URL exactas de esta lista, " +
+                "nunca inventes URL):\n$listed\n\n"
+        } else {
+            "\n\nWeb search results for this thought " +
+                "(use only what helps; cite exact URLs from this list, " +
+                "never invent URLs):\n$listed\n\n"
+        }
+    }
+
+    private fun contextBlockFor(
+        context: ConversationContext,
+        language: AiLanguage
+    ): String = buildString {
+        val spanish = language == AiLanguage.SPANISH
+        appendLine("\"\"\"")
+        appendLine(context.originalText)
+        appendLine("\"\"\"")
+        context.type?.let {
+            appendLine(if (spanish) "Tipo detectado: $it" else "Detected type: $it")
+        }
+        context.summary?.takeIf { it.isNotBlank() }?.let {
+            appendLine(if (spanish) "Resumen anterior: $it" else "Previous summary: $it")
+        }
+        if (context.relatedTopics.isNotEmpty()) {
+            appendLine(
+                if (spanish) {
+                    "Temas relacionados: " + context.relatedTopics.joinToString(", ")
+                } else {
+                    "Related topics: " + context.relatedTopics.joinToString(", ")
+                }
+            )
         }
     }
 
@@ -114,12 +196,13 @@ fences, no commentary, no HTML, no UI markup of any kind. Values are plain
 text — never put markdown or HTML formatting inside them.
 Use exactly these keys:
 "type", "title", "summary", "explanation", "examples", "keyPoints",
-"relatedTopics", "followUpQuestions".
+"relatedTopics", "followUpQuestions", "sources".
 "type" is exactly one of: QUESTION, CONCEPT, IDEA, CONFUSION, TOPIC,
 CLAIM, REFLECTION, OTHER.
 "title" is short (under 60 characters) and faithful to the thought.
 "examples", "keyPoints", "relatedTopics", "followUpQuestions" are arrays
-of strings. Omit nothing: always provide every key; use an empty array
+of strings. "sources" is an array of objects with "title" and "url".
+Omit nothing: always provide every key; use an empty array
 only when that part genuinely has no content.
 
 Adapt the content to the detected type:
@@ -165,6 +248,9 @@ UNIVERSAL RULES
 - "followUpQuestions": two or three questions the user would plausibly ask
   next about this thought — their likely doubts, phrased as the user's own
   questions, not generic exploration prompts.
+- "sources": objects with "title" and "url" copied exactly from the web
+  search results provided alongside the thought (never invent URLs);
+  empty array when no web search was used or nothing was useful.
 """.trimIndent()
 
     private val SYSTEM_PROMPT_ES = """
@@ -211,12 +297,13 @@ de código, sin comentarios, sin HTML, sin ningún tipo de marcado de interfaz.
 Los valores son texto plano — nunca pongas formato markdown ni HTML dentro.
 Usa exactamente estas claves:
 "type", "title", "summary", "explanation", "examples", "keyPoints",
-"relatedTopics", "followUpQuestions".
+"relatedTopics", "followUpQuestions", "sources".
 "type" es exactamente uno de: QUESTION, CONCEPT, IDEA, CONFUSION, TOPIC,
 CLAIM, REFLECTION, OTHER.
 "title" es corto (menos de 60 caracteres) y fiel a la idea.
 "examples", "keyPoints", "relatedTopics", "followUpQuestions" son arreglos
-de cadenas. No omitas nada: provee siempre cada clave; usa un arreglo
+de cadenas. "sources" es un arreglo de objetos con "title" y "url".
+No omitas nada: provee siempre cada clave; usa un arreglo
 vacío solo cuando esa parte genuinamente no tenga contenido.
 
 Adapta el contenido al tipo detectado:
@@ -265,6 +352,9 @@ REGLAS UNIVERSALES
 - "followUpQuestions": dos o tres preguntas que el propio usuario
   plausiblemente se haría sobre esta idea — sus dudas probables, redactadas
   como preguntas del propio usuario, no como consignas genéricas de exploración.
+- "sources": objetos con "title" y "url" copiados exactamente de los
+  resultados de búsqueda web provistos junto a la idea (nunca inventes URL);
+  arreglo vacío cuando no se usó búsqueda web o nada fue útil.
 """.trimIndent()
 
     private val CONTINUATION_SYSTEM_EN = """
@@ -299,5 +389,56 @@ Reglas:
 - Mantén el mismo tono: lenguaje simple primero, explicación más profunda cuando aporte.
 - Si el usuario se desvía a algo sin relación, responde brevemente y ofrece un puente
   de regreso a la idea original.
+""".trimIndent()
+
+    private val GATEKEEPER_SYSTEM_EN = """
+You are the search gatekeeper for Curio, a personal curiosity inbox.
+Given a captured thought (and, in conversation, the user's first follow-up),
+decide whether answering well requires up-to-date or external factual
+information the model may not reliably know.
+
+Answer YES (need_search true) when the answer depends on:
+- current events, recent developments, or anything that changes over time
+  (prices, versions, laws, records, schedules)
+- specific real-world facts, figures, dates, or entities worth verifying
+- verifying whether an assertion is true
+
+Answer NO (need_search false) for:
+- reasoning, explanations of stable concepts, math, or logic
+- opinions, reflections, ideas, plans, or creative work
+- personal advice that needs no external facts
+
+Output exactly one JSON object and nothing else: no markdown, no code
+fences, no commentary. Use exactly these keys: "need_search", "query".
+"need_search" is true or false (JSON boolean, never a string).
+"query" is a short self-contained web-search query in the user's language
+(keywords with context, not a full sentence); empty string when no search
+is needed.
+""".trimIndent()
+
+    private val GATEKEEPER_SYSTEM_ES = """
+Eres el portero de búsqueda de Curio, una bandeja personal de curiosidad.
+Dada una idea capturada (y, en conversación, el primer seguimiento del usuario),
+decide si responder bien requiere información factual externa o actualizada
+que el modelo podría no conocer de forma confiable.
+
+Responde SÍ (need_search true) cuando la respuesta dependa de:
+- eventos actuales, novedades recientes o cualquier cosa que cambie con el
+  tiempo (precios, versiones, leyes, récords, calendarios)
+- hechos, cifras, fechas o entidades concretas del mundo real que valga la
+  pena verificar
+- verificar si una afirmación es verdadera
+
+Responde NO (need_search false) para:
+- razonamiento, explicaciones de conceptos estables, matemáticas o lógica
+- opiniones, reflexiones, ideas, planes o trabajo creativo
+- consejos personales que no necesiten datos externos
+
+Devuelve exactamente un objeto JSON y nada más: sin markdown, sin bloques
+de código, sin comentarios. Usa exactamente estas claves: "need_search", "query".
+"need_search" es true o false (booleano JSON, nunca cadena).
+"query" es una búsqueda web corta y autocontenida en el idioma del usuario
+(palabras clave con contexto, no una frase completa); cadena vacía cuando no
+se necesita buscar.
 """.trimIndent()
 }

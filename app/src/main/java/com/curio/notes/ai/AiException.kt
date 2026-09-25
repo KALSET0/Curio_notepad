@@ -39,4 +39,12 @@ sealed class AiException(val code: String, message: String, cause: Throwable? = 
     )
 
     class ServiceError(details: String) : AiException("service_error", details)
+
+    // Web search (Tavily) specifically: key missing/rejected. Surfaced instead
+    // of answering silently without sources the user explicitly enabled.
+    class SearchFailed : AiException(
+        "search_failed",
+        "Web search is not available. " +
+            "Add TAVILY_API_KEY to local.properties (or the environment) and rebuild."
+    )
 }

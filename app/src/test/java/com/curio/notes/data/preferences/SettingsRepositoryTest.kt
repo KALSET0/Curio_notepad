@@ -24,6 +24,7 @@ class SettingsRepositoryTest {
         assertEquals(AppTheme.SYSTEM, repository.observeTheme().first())
         assertEquals(AiProviderChoice.MOCK, repository.observeAiProvider().first())
         assertEquals(AppLanguage.SYSTEM, repository.observeLanguage().first())
+        assertEquals(false, repository.observeWebSearch().first())
     }
 
     @Test
@@ -33,10 +34,12 @@ class SettingsRepositoryTest {
         repository.setTheme(AppTheme.DARK)
         repository.setAiProvider(AiProviderChoice.GEMINI)
         repository.setLanguage(AppLanguage.SPANISH)
+        repository.setWebSearchEnabled(true)
 
         assertEquals(AppTheme.DARK, repository.observeTheme().first())
         assertEquals(AiProviderChoice.GEMINI, repository.observeAiProvider().first())
         assertEquals(AppLanguage.SPANISH, repository.observeLanguage().first())
+        assertEquals(true, repository.observeWebSearch().first())
     }
 
     @Test

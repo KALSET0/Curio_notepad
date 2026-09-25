@@ -27,6 +27,9 @@ class SettingsViewModel(
     val language: StateFlow<AppLanguage> = settingsRepository.observeLanguage()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppLanguage.SYSTEM)
 
+    val webSearchEnabled: StateFlow<Boolean> = settingsRepository.observeWebSearch()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     fun setTheme(theme: AppTheme) {
         viewModelScope.launch { settingsRepository.setTheme(theme) }
     }
@@ -37,6 +40,10 @@ class SettingsViewModel(
 
     fun setLanguage(language: AppLanguage) {
         viewModelScope.launch { settingsRepository.setLanguage(language) }
+    }
+
+    fun setWebSearchEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setWebSearchEnabled(enabled) }
     }
 
     companion object {

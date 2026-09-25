@@ -4,11 +4,20 @@ import com.curio.notes.ai.AIProvider
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiException
 import com.curio.notes.ai.AiJson
+import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.ConversationContext
 import com.curio.notes.ai.prompts.CurioPrompts
+import com.curio.notes.ai.search.GatekeeperDecision
+import com.curio.notes.ai.search.TavilyConfig
+import com.curio.notes.ai.search.WebResult
+import com.curio.notes.ai.search.WebSearchProvider
+import com.curio.notes.ai.search.executeSearch
+import com.curio.notes.ai.search.parseGatekeeperDecision
+import com.curio.notes.ai.withVerifiedSources
 import com.curio.notes.domain.model.AppLanguage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -34,18 +43,27 @@ class OpenRouterAIProvider(
     private val model: String = OpenRouterConfig.MODEL,
     private val baseUrl: String = OpenRouterConfig.BASE_URL,
     private val client: OkHttpClient = GeminiAIProvider.defaultClient(),
-    private val language: Flow<AppLanguage> = flowOf(AppLanguage.ENGLISH)
+    private val language: Flow<AppLanguage> = flowOf(AppLanguage.ENGLISH),
+    private val webSearch: WebSearchProvider? = null,
+    private val webSearchEnabled: Flow<Boolean> = flowOf(false)
 ) : AIProvider {
 
     override suspend fun classifyAndAnswer(input: String): AIResponse {
         if (apiKey.isBlank()) throw AiException.MissingApiKey()
         val aiLanguage = language.first().toAiLanguage()
+        val sources = researchWithPrompt(
+            CurioPrompts.gatekeeperPromptFor(input, aiLanguage),
+            aiLanguage
+        )
         val body = StrictJson.encodeToString(
             OpenRouterChatRequest(
                 model = model,
                 messages = listOf(
                     OpenRouterMessage("system", CurioPrompts.systemPromptFor(aiLanguage)),
-                    OpenRouterMessage("user", CurioPrompts.userPromptFor(input, aiLanguage))
+                    OpenRouterMessage(
+                        "user",
+                        CurioPrompts.userPromptFor(input, aiLanguage, sources)
+                    )
                 ),
                 temperature = OpenRouterConfig.TEMPERATURE,
                 maxTokens = OpenRouterConfig.MAX_OUTPUT_TOKENS,
@@ -54,7 +72,7 @@ class OpenRouterAIProvider(
         )
         val text = postText(body)
         return try {
-            AiJson.decodeFromString<AIResponse>(text)
+            AiJson.decodeFromString<AIResponse>(text).withVerifiedSources(sources)
         } catch (e: SerializationException) {
             throw AiException.InvalidResponse(e)
         } catch (e: IllegalArgumentException) {
@@ -69,9 +87,24 @@ class OpenRouterAIProvider(
     ): String {
         if (apiKey.isBlank()) throw AiException.MissingApiKey()
         val aiLanguage = language.first().toAiLanguage()
+        // The gatekeeper decides once, on the first turn. Later turns reuse
+        // the grounded answer already present in history.
+        val sources = if (history.isEmpty()) {
+            researchWithPrompt(
+                CurioPrompts.gatekeeperPromptForConversation(context, input, aiLanguage),
+                aiLanguage
+            )
+        } else {
+            emptyList()
+        }
         val messages = buildList {
             add(OpenRouterMessage("system", CurioPrompts.continuationSystemFor(aiLanguage)))
-            add(OpenRouterMessage("user", CurioPrompts.conversationContextFor(context, aiLanguage)))
+            add(
+                OpenRouterMessage(
+                    "user",
+                    CurioPrompts.conversationContextFor(context, aiLanguage, sources)
+                )
+            )
             add(
                 OpenRouterMessage(
                     "assistant",
@@ -97,6 +130,47 @@ class OpenRouterAIProvider(
             )
         )
         return postText(body)
+    }
+
+    // Runs the gatekeeper mini-call and, when approved, the web search.
+    // Gatekeeper trouble degrades to no sources; key problems surface.
+    private suspend fun researchWithPrompt(
+        gatekeeperUserPrompt: String,
+        aiLanguage: AiLanguage
+    ): List<WebResult> {
+        val engine = webSearch ?: return emptyList()
+        if (!webSearchEnabled.first()) return emptyList()
+        val decision = try {
+            askGatekeeper(gatekeeperUserPrompt, aiLanguage)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return emptyList()
+        }
+        if (!decision.need_search) return emptyList()
+        return engine.executeSearch(decision.query, TavilyConfig.MAX_RESULTS, aiLanguage)
+    }
+
+    private suspend fun askGatekeeper(
+        gatekeeperUserPrompt: String,
+        aiLanguage: AiLanguage
+    ): GatekeeperDecision {
+        val body = StrictJson.encodeToString(
+            OpenRouterChatRequest(
+                model = model,
+                messages = listOf(
+                    OpenRouterMessage(
+                        "system",
+                        CurioPrompts.gatekeeperSystemFor(aiLanguage)
+                    ),
+                    OpenRouterMessage("user", gatekeeperUserPrompt)
+                ),
+                temperature = 0.2,
+                maxTokens = 128,
+                responseFormat = OpenRouterResponseFormat("json_object")
+            )
+        )
+        return parseGatekeeperDecision(postText(body))
     }
 
     private suspend fun postText(body: String): String {

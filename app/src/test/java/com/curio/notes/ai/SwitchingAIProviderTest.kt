@@ -61,6 +61,7 @@ class SwitchingAIProviderTest {
         private val theme = MutableStateFlow(AppTheme.SYSTEM)
         private val provider = MutableStateFlow(AiProviderChoice.MOCK)
         private val language = MutableStateFlow(AppLanguage.SYSTEM)
+        private val webSearch = MutableStateFlow(false)
 
         fun emit(choice: AiProviderChoice) {
             provider.value = choice
@@ -82,6 +83,12 @@ class SwitchingAIProviderTest {
 
         override suspend fun setLanguage(language: AppLanguage) {
             this.language.value = language
+        }
+
+        override fun observeWebSearch() = webSearch
+
+        override suspend fun setWebSearchEnabled(enabled: Boolean) {
+            webSearch.value = enabled
         }
     }
 }

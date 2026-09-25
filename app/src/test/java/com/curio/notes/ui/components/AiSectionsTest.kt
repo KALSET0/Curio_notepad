@@ -2,6 +2,8 @@ package com.curio.notes.ui.components
 
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiLanguage
+import com.curio.notes.ai.AiSource
+import com.curio.notes.ai.withVerifiedSources
 import com.curio.notes.domain.model.NoteType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -43,6 +45,7 @@ class AiSectionsTest {
                 is AiSection.Bullets -> section.heading
                 is AiSection.Chips -> section.heading
                 is AiSection.Questions -> section.heading
+                is AiSection.Sources -> section.heading
             }
         }
         assertEquals(
@@ -74,6 +77,7 @@ class AiSectionsTest {
                 is AiSection.Bullets -> section.heading
                 is AiSection.Chips -> section.heading
                 is AiSection.Questions -> section.heading
+                is AiSection.Sources -> section.heading
             }
         }
         assertEquals(listOf("What Is Known", "Context & Limits"), headings)
@@ -164,5 +168,66 @@ class AiSectionsTest {
         val spanish = sectionsFor(response, AiLanguage.SPANISH).single()
         assertTrue(spanish is AiSection.Questions)
         assertEquals("Posibles dudas", (spanish as AiSection.Questions).heading)
+    }
+
+    @Test
+    fun `sources section renders in both languages`() {
+        val response = AIResponse(
+            type = NoteType.QUESTION,
+            title = "t",
+            sources = listOf(AiSource("T", "https://example.com/a"))
+        )
+        val english = sectionsFor(response).single()
+        assertTrue(english is AiSection.Sources)
+        assertEquals("Sources", (english as AiSection.Sources).heading)
+
+        val spanish = sectionsFor(response, AiLanguage.SPANISH).single()
+        assertTrue(spanish is AiSection.Sources)
+        assertEquals("Fuentes", (spanish as AiSection.Sources).heading)
+    }
+
+    @Test
+    fun `formatted response includes sources even without follow-ups`() {
+        val response = AIResponse(
+            type = NoteType.QUESTION,
+            title = "t",
+            followUpQuestions = listOf("fq"),
+            sources = listOf(AiSource("T", "https://example.com/a"))
+        )
+        val formatted = formatAiResponse(response, includeFollowUpQuestions = false)
+
+        assertTrue(!formatted.contains("fq"))
+        assertTrue(formatted.contains("Sources"))
+        assertTrue(formatted.contains("https://example.com/a"))
+    }
+
+    @Test
+    fun `unverified source urls are dropped`() {
+        val response = AIResponse(
+            type = NoteType.QUESTION,
+            title = "t",
+            sources = listOf(
+                AiSource("Real", "https://example.com/a"),
+                AiSource("Invented", "https://hallucinated.example/x")
+            )
+        )
+        val verified = response.withVerifiedSources(
+            listOf(
+                com.curio.notes.ai.search.WebResult("T", "https://example.com/a", "s")
+            )
+        )
+
+        assertEquals(1, verified.sources.size)
+        assertEquals("https://example.com/a", verified.sources.single().url)
+    }
+
+    @Test
+    fun `old payloads without sources still parse`() {
+        val parsed = com.curio.notes.ai.parseAiResponse(
+            """{"type":"QUESTION","title":"t"}"""
+        )
+
+        assertEquals(NoteType.QUESTION, parsed?.type)
+        assertTrue(parsed?.sources.isNullOrEmpty())
     }
 }

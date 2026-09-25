@@ -138,4 +138,46 @@ class MockAIProviderTest {
         assertTrue(reply.contains("Cuéntame más"))
         assertTrue(reply.lowercase().contains("simulada"))
     }
+
+    @Test
+    fun `mock-search hook attaches example sources when enabled`() = runTest {
+        val searching = MockAIProvider(
+            delayMillis = 0L,
+            webSearchEnabled = flowOf(true)
+        )
+
+        val response = searching.classifyAndAnswer("Buy milk mock-search")
+
+        assertEquals(2, response.sources.size)
+        assertTrue(response.sources.all { it.url.startsWith("https://example.com/") })
+    }
+
+    @Test
+    fun `search disabled means no sources even with hook`() = runTest {
+        val response = provider.classifyAndAnswer("Buy milk mock-search")
+
+        assertTrue(response.sources.isEmpty())
+    }
+
+    @Test
+    fun `conversation searches only on the first turn`() = runTest {
+        val searching = MockAIProvider(
+            delayMillis = 0L,
+            webSearchEnabled = flowOf(true)
+        )
+        val context = ConversationContext("Latest news today", null, null)
+
+        val first = searching.continueConversation(context, emptyList(), "mock-search latest news")
+        val second = searching.continueConversation(
+            context,
+            listOf(
+                ChatMessage(ChatRole.USER, "mock-search latest news"),
+                ChatMessage(ChatRole.MODEL, first)
+            ),
+            "mock-search latest news"
+        )
+
+        assertTrue(first.contains("example web sources"))
+        assertTrue(!second.contains("example web sources"))
+    }
 }

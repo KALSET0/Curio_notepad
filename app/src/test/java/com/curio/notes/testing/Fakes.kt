@@ -1,12 +1,16 @@
 package com.curio.notes.testing
 
+import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ChatMessage
+import com.curio.notes.ai.search.WebResult
+import com.curio.notes.ai.search.WebSearchProvider
 import com.curio.notes.domain.model.Note
 import com.curio.notes.domain.model.NoteStatus
 import com.curio.notes.domain.repository.NoteRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 
 class FakeNoteRepository : NoteRepository {
     private val notes = MutableStateFlow(mapOf<Long, Note>())
@@ -104,5 +108,21 @@ class FakeNoteRepository : NoteRepository {
 
     override suspend fun clearConversation(noteId: Long) {
         conversations.value -= noteId
+    }
+}
+
+class FakeWebSearch(
+    var results: List<WebResult> = emptyList(),
+    var failure: IOException? = null,
+    val queries: MutableList<String> = mutableListOf()
+) : WebSearchProvider {
+    override suspend fun search(
+        query: String,
+        maxResults: Int,
+        language: AiLanguage
+    ): List<WebResult> {
+        queries += query
+        failure?.let { throw it }
+        return results
     }
 }

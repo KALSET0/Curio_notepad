@@ -121,7 +121,11 @@ Local keyword search across titles, original thoughts, AI content and related to
 
 ### 💬 Continue with AI
 
-From any answered note, **Continue with AI** opens a conversation that already carries the note's context (original thought, type, summary, related topics). Follow-up suggestions double as tap-to-send starters. Conversations are ephemeral by design.
+From any answered note, **Continue with AI** opens a conversation that already carries the note's context (original thought, type, summary, related topics). Follow-up suggestions double as tap-to-send starters. Conversations are persisted per note and shown in the note detail.
+
+### 🔍 Web search (opt-in)
+
+Settings → **Web search** lets the AI consult the internet via Tavily (`TAVILY_API_KEY`). A tiny gatekeeper call decides per note — and once at the start of each conversation — whether fresh facts are needed; at most one search runs per request. Sources the model cites are verified against the delivered URLs and shown as a tappable **Sources** section on the note. Search failures degrade to answering without sources, except a missing/rejected key which surfaces a friendly error.
 
 ### ⚙️ Settings & Themes
 
@@ -171,6 +175,7 @@ Keys live in git-ignored `local.properties` (or environment variables) and are c
 ```properties
 GEMINI_API_KEY=
 OPENROUTER_API_KEY=   # free at https://openrouter.ai/keys
+TAVILY_API_KEY=       # free at https://tavily.com — only needed for web search
 ```
 
 Empty means unconfigured — the app keeps working with Mock AI, and selecting a keyless provider shows a friendly error on notes instead of crashing. Keys must never be committed to the repository.
@@ -321,6 +326,7 @@ Keys are configured via git-ignored `local.properties` (see `local.properties.ex
 ```properties
 GEMINI_API_KEY=
 OPENROUTER_API_KEY=
+TAVILY_API_KEY=
 ```
 
 > **Important:** An API key included in a distributed Android application can potentially be extracted. The current architecture is acceptable for a personal application, but a public release would require a more secure API architecture.
@@ -355,6 +361,7 @@ Copy `local.properties.example` to `local.properties` and fill in the keys you h
 ```properties
 GEMINI_API_KEY=
 OPENROUTER_API_KEY=
+TAVILY_API_KEY=
 ```
 
 ### Build the project

@@ -17,6 +17,7 @@ fun errorMessageFor(code: String): String = when (code) {
     "save_changes_failed" -> stringResource(R.string.error_save_changes_failed)
     "delete_failed" -> stringResource(R.string.error_delete_failed)
     "conversation_failed" -> stringResource(R.string.error_conversation_failed)
+    "search_failed" -> stringResource(R.string.error_search_failed)
     "unknown" -> stringResource(R.string.error_unknown)
     else -> code
 }

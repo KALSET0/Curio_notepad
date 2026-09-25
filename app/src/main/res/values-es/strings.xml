@@ -94,6 +94,9 @@
     <string name="lang_system_sub">Seguir el idioma del dispositivo.</string>
     <string name="lang_english">Inglés</string>
     <string name="lang_spanish">Español</string>
+    <string name="section_websearch">Búsqueda web</string>
+    <string name="websearch_title">Permitir que la IA busque en internet</string>
+    <string name="websearch_sub">La IA busca solo cuando necesita datos frescos. Requiere TAVILY_API_KEY.</string>
     <string name="section_about">Acerca de</string>
     <string name="about_version">Curio Notepad %1$s</string>
     <string name="about_body">Prototipo personal. Las notas permanecen en este dispositivo; solo las peticiones a la IA salen de él.</string>
@@ -137,6 +140,7 @@
     <string name="error_delete_failed">No se pudo borrar esta nota. Inténtalo de nuevo.</string>
     <string name="error_update_failed">No se pudieron actualizar las notas elegidas. Inténtalo de nuevo.</string>
     <string name="error_conversation_failed">No se pudo continuar la conversación. Tus notas están a salvo — reintenta.</string>
+    <string name="error_search_failed">La IA no pudo buscar en la web. Revisa TAVILY_API_KEY en local.properties (o el entorno) y recompila.</string>
     <string name="cd_copy">Copiar</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
 </resources>

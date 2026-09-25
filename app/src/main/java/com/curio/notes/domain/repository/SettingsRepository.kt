@@ -12,4 +12,6 @@ interface SettingsRepository {
     suspend fun setAiProvider(choice: AiProviderChoice)
     fun observeLanguage(): Flow<AppLanguage>
     suspend fun setLanguage(language: AppLanguage)
+    fun observeWebSearch(): Flow<Boolean>
+    suspend fun setWebSearchEnabled(enabled: Boolean)
 }

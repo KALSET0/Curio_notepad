@@ -20,6 +20,10 @@ val openRouterApiKey: String =
     (localProperties.getProperty("OPENROUTER_API_KEY") ?: System.getenv("OPENROUTER_API_KEY"))
         .orEmpty()
         .replace("\"", "")
+val tavilyApiKey: String =
+    (localProperties.getProperty("TAVILY_API_KEY") ?: System.getenv("TAVILY_API_KEY"))
+        .orEmpty()
+        .replace("\"", "")
 
 android {
     namespace = "com.curio.notes"
@@ -36,6 +40,7 @@ android {
         versionName = "0.1.0"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
         buildConfigField("String", "OPENROUTER_API_KEY", "\"$openRouterApiKey\"")
+        buildConfigField("String", "TAVILY_API_KEY", "\"$tavilyApiKey\"")
 
         vectorDrawables {
             useSupportLibrary = true

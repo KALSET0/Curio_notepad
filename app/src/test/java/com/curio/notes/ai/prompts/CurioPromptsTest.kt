@@ -2,8 +2,10 @@ package com.curio.notes.ai.prompts
 
 import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ConversationContext
+import com.curio.notes.ai.search.WebResult
 import com.curio.notes.domain.model.NoteType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,7 +25,8 @@ class CurioPromptsTest {
     fun `every json key is specified`() {
         val keys = listOf(
             "type", "title", "summary", "explanation",
-            "examples", "keyPoints", "relatedTopics", "followUpQuestions"
+            "examples", "keyPoints", "relatedTopics", "followUpQuestions",
+            "sources"
         )
         for (key in keys) {
             assertTrue(
@@ -93,7 +96,8 @@ class CurioPromptsTest {
         val prompt = CurioPrompts.systemPromptFor(AiLanguage.SPANISH)
         val keys = listOf(
             "type", "title", "summary", "explanation",
-            "examples", "keyPoints", "relatedTopics", "followUpQuestions"
+            "examples", "keyPoints", "relatedTopics", "followUpQuestions",
+            "sources"
         )
         for (key in keys) {
             assertTrue("ES prompt does not specify \"$key\"", prompt.contains("\"$key\""))
@@ -144,5 +148,55 @@ class CurioPromptsTest {
         val system = CurioPrompts.continuationSystemFor(AiLanguage.SPANISH).lowercase()
         assertTrue(system.contains("espa"))
         assertTrue(system.contains("texto plano"))
+    }
+
+    @Test
+    fun `gatekeeper demands a boolean decision plus query`() {
+        for (language in AiLanguage.entries) {
+            val system = CurioPrompts.gatekeeperSystemFor(language)
+            assertTrue(system.contains("\"need_search\""))
+            assertTrue(system.contains("\"query\""))
+            assertTrue(system.contains("JSON"))
+        }
+        assertTrue(
+            CurioPrompts.gatekeeperSystemFor(AiLanguage.SPANISH).lowercase()
+                .contains("idioma del usuario")
+        )
+    }
+
+    @Test
+    fun `gatekeeper prompts embed the input`() {
+        val prompt = CurioPrompts.gatekeeperPromptFor("¿Es verdad X?", AiLanguage.SPANISH)
+        assertTrue(prompt.contains("¿Es verdad X?"))
+        assertTrue(prompt.contains("JSON"))
+
+        val context = ConversationContext(
+            originalText = "Coffee",
+            type = NoteType.CLAIM,
+            summary = "Claimed.",
+            relatedTopics = listOf("T1")
+        )
+        val convo = CurioPrompts.gatekeeperPromptForConversation(
+            context, "Is it really true?", AiLanguage.ENGLISH
+        )
+        assertTrue(convo.contains("Coffee"))
+        assertTrue(convo.contains("Is it really true?"))
+        assertTrue(convo.contains("JSON"))
+    }
+
+    @Test
+    fun `sources are injected with anti-hallucination instruction`() {
+        val results = listOf(WebResult("T", "https://example.com/a", "snippet"))
+        val prompt = CurioPrompts.userPromptFor("Hi?", AiLanguage.ENGLISH, results)
+        assertTrue(prompt.contains("https://example.com/a"))
+        assertTrue(prompt.lowercase().contains("never invent"))
+
+        val plain = CurioPrompts.userPromptFor("Hi?", AiLanguage.ENGLISH)
+        assertFalse(plain.contains("example.com"))
+
+        val convo = CurioPrompts.conversationContextFor(
+            ConversationContext("Hi", null, null), AiLanguage.SPANISH, results
+        )
+        assertTrue(convo.contains("https://example.com/a"))
     }
 }

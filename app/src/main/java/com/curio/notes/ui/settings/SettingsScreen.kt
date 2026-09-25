@@ -17,6 +17,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -52,6 +53,7 @@ fun SettingsScreen(
     val theme by viewModel.theme.collectAsStateWithLifecycle()
     val provider by viewModel.aiProvider.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
+    val webSearchEnabled by viewModel.webSearchEnabled.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -140,6 +142,14 @@ fun SettingsScreen(
                 onSelect = { viewModel.setTheme(AppTheme.DARK) }
             )
 
+            SettingsSectionTitle(stringResource(R.string.section_websearch))
+            SwitchOption(
+                checked = webSearchEnabled,
+                title = stringResource(R.string.websearch_title),
+                subtitle = stringResource(R.string.websearch_sub),
+                onCheckedChange = viewModel::setWebSearchEnabled
+            )
+
             SettingsSectionTitle(stringResource(R.string.section_language))
             RadioOption(
                 selected = language == AppLanguage.SYSTEM,
@@ -211,5 +221,31 @@ private fun RadioOption(
                 Text(text = it, style = MaterialTheme.typography.bodySmall)
             }
         }
+    }
+}
+
+@Composable
+private fun SwitchOption(
+    checked: Boolean,
+    title: String,
+    subtitle: String?,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = { onCheckedChange(!checked) })
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            subtitle?.let {
+                Text(text = it, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
