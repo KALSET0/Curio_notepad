@@ -210,7 +210,9 @@ fun ConversationScreen(
                             )
                             DropdownMenu(
                                 expanded = menuForIndex == index,
-                                onDismissRequest = { menuForIndex = null }
+                                onDismissRequest = { menuForIndex = null },
+                                shape = RoundedCornerShape(16.dp),
+                                tonalElevation = 2.dp
                             ) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.cd_copy)) },

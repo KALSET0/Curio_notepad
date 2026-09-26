@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.curio.notes.R
 import com.curio.notes.ui.theme.SecondaryDark
+import com.curio.notes.ui.theme.Spacing
 import com.curio.notes.ui.util.rememberAppContainer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -79,7 +80,7 @@ fun SplashScreen(onDone: () -> Unit) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
             modifier = Modifier.graphicsLayer {
                 this.alpha = alpha
                 scaleX = scale
