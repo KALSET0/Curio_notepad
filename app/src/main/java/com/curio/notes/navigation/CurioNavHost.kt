@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -16,11 +18,18 @@ import com.curio.notes.ui.note.CreateNoteScreen
 import com.curio.notes.ui.note.NoteDetailScreen
 import com.curio.notes.ui.search.SearchScreen
 import com.curio.notes.ui.settings.SettingsScreen
+import com.curio.notes.ui.setup.SetupScreen
 import com.curio.notes.ui.splash.SplashScreen
+import com.curio.notes.ui.util.rememberAppContainer
 
 @Composable
 fun CurioNavHost() {
     val navController = rememberNavController()
+    val container = rememberAppContainer()
+    // Fresh installs land on the optional AI setup; everyone else goes
+    // straight home. Defaults to true so existing installs never flash it.
+    val setupComplete by container.settingsRepository.observeSetupComplete()
+        .collectAsStateWithLifecycle(initialValue = true)
     NavHost(
         navController = navController,
         startDestination = CurioRoute.Splash,
@@ -52,8 +61,22 @@ fun CurioNavHost() {
         ) {
             SplashScreen(
                 onDone = {
-                    navController.navigate(CurioRoute.Home) {
+                    val next = if (setupComplete) {
+                        CurioRoute.Home
+                    } else {
+                        CurioRoute.Setup
+                    }
+                    navController.navigate(next) {
                         popUpTo(CurioRoute.Splash) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable<CurioRoute.Setup> {
+            SetupScreen(
+                onDone = {
+                    navController.navigate(CurioRoute.Home) {
+                        popUpTo(CurioRoute.Setup) { inclusive = true }
                     }
                 }
             )

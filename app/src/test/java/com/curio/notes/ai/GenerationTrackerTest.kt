@@ -128,5 +128,8 @@ class GenerationTrackerTest {
         override suspend fun setDeveloperMode(enabled: Boolean) {
             developerMode.value = enabled
         }
+
+        override fun observeSetupComplete(): Flow<Boolean> = flowOf(false)
+        override suspend fun setSetupComplete(completed: Boolean) = Unit
     }
 }

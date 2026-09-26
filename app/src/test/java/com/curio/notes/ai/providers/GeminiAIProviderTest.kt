@@ -3,6 +3,7 @@ package com.curio.notes.ai.providers
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiException
 import com.curio.notes.ai.AiJson
+import com.curio.notes.ai.ApiKeyCheck
 import com.curio.notes.ai.AiSource
 import com.curio.notes.ai.ChatMessage
 import com.curio.notes.ai.ChatRole
@@ -349,6 +350,24 @@ class GeminiAIProviderTest {
         val requestBody = recorded!!.body.readUtf8()
         assertTrue(requestBody.contains("follow-up"))
         assertTrue(requestBody.contains("questions"))
+    }
+
+    @Test
+    fun `validateKey maps server answers`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
+        assertEquals(ApiKeyCheck.VALID, provider().validateKey("k"))
+
+        server.enqueue(MockResponse().setResponseCode(401))
+        assertEquals(ApiKeyCheck.INVALID, provider().validateKey("k"))
+
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
+        assertEquals(ApiKeyCheck.UNREACHABLE, provider().validateKey("k"))
+    }
+
+    @Test
+    fun `validateKey rejects blank without network`() = runTest {
+        assertEquals(ApiKeyCheck.INVALID, provider().validateKey("  "))
+        assertEquals(0, server.requestCount)
     }
 
     private suspend fun failsAs(expected: Class<out AiException>, block: suspend () -> Unit) {

@@ -8,6 +8,7 @@ import com.curio.notes.domain.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -143,5 +144,8 @@ class SwitchingAIProviderTest {
         override suspend fun setDeveloperMode(enabled: Boolean) {
             developerMode.value = enabled
         }
+
+        override fun observeSetupComplete() = flowOf(false)
+        override suspend fun setSetupComplete(completed: Boolean) = Unit
     }
 }

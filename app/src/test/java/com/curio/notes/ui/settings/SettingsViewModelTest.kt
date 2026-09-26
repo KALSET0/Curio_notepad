@@ -1,6 +1,8 @@
 package com.curio.notes.ui.settings
 
+import com.curio.notes.ai.ApiKeyCheck
 import com.curio.notes.domain.model.AiProviderChoice
+import com.curio.notes.domain.model.ApiKeyKind
 import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
 import com.curio.notes.domain.repository.SettingsRepository
@@ -115,17 +117,73 @@ class SettingsViewModelTest {
         assertEquals(OllamaTestState.Failed, badViewModel.ollamaTest.value)
     }
 
+    @Test
+    fun `saveApiKey stores and clearApiKey removes`() = runTest {
+        val viewModel = viewModel(FakeSettings(), clock = { 0L })
+        backgroundScope.launch { viewModel.geminiKey.collect {} }
+        advanceUntilIdle()
+
+        viewModel.saveApiKey(ApiKeyKind.GEMINI, "secret")
+        advanceUntilIdle()
+        assertEquals("secret", viewModel.geminiKey.value)
+
+        viewModel.clearApiKey(ApiKeyKind.GEMINI)
+        advanceUntilIdle()
+        assertEquals("", viewModel.geminiKey.value)
+    }
+
+    @Test
+    fun `testGeminiKey maps validation outcomes`() = runTest {
+        val cases = listOf(
+            ApiKeyCheck.VALID to KeyTestState.Valid,
+            ApiKeyCheck.INVALID to KeyTestState.Invalid,
+            ApiKeyCheck.UNREACHABLE to KeyTestState.Unreachable
+        )
+        for ((check, expected) in cases) {
+            val viewModel = viewModel(
+                FakeSettings(),
+                clock = { 0L },
+                validateGemini = { check }
+            )
+            backgroundScope.launch { viewModel.geminiTest.collect {} }
+            advanceUntilIdle()
+
+            viewModel.testGeminiKey("k")
+            advanceUntilIdle()
+
+            assertEquals(expected, viewModel.geminiTest.value)
+        }
+    }
+
+    @Test
+    fun `completeSetup marks flag`() = runTest {
+        val settings = FakeSettings()
+        val viewModel = viewModel(settings, clock = { 0L })
+
+        viewModel.completeSetup()
+        advanceUntilIdle()
+
+        assertEquals(true, settings.setupComplete.value)
+    }
+
     private fun viewModel(
         settings: FakeSettings,
         clock: () -> Long,
-        testOllama: suspend () -> Boolean = { false }
+        testOllama: suspend () -> Boolean = { false },
+        validateGemini: suspend (String) -> ApiKeyCheck = { ApiKeyCheck.UNREACHABLE },
+        validateOpenRouter: suspend (String) -> ApiKeyCheck = { ApiKeyCheck.UNREACHABLE }
     ) = SettingsViewModel(
         settingsRepository = settings,
         isGeminiConfigured = false,
         isOpenRouterConfigured = false,
         appVersion = "0.1.0",
         testOllamaConnection = testOllama,
-        clock = clock
+        clock = clock,
+        observeUserKey = { kind -> settings.keys.getValue(kind) },
+        saveUserKey = { kind, value -> settings.keys.getValue(kind).value = value },
+        clearUserKey = { kind -> settings.keys.getValue(kind).value = "" },
+        validateGeminiKey = validateGemini,
+        validateOpenRouterKey = validateOpenRouter
     )
 
     private class FakeSettings : SettingsRepository {
@@ -136,6 +194,8 @@ class SettingsViewModelTest {
         val ollamaUrl = MutableStateFlow("")
         val ollamaModel = MutableStateFlow("")
         val developerMode = MutableStateFlow(false)
+        val setupComplete = MutableStateFlow(false)
+        val keys = ApiKeyKind.entries.associateWith { MutableStateFlow("") }
 
         override fun observeTheme() = theme
         override suspend fun setTheme(theme: AppTheme) {
@@ -170,6 +230,11 @@ class SettingsViewModelTest {
         override fun observeDeveloperMode() = developerMode
         override suspend fun setDeveloperMode(enabled: Boolean) {
             developerMode.value = enabled
+        }
+
+        override fun observeSetupComplete() = setupComplete
+        override suspend fun setSetupComplete(completed: Boolean) {
+            setupComplete.value = completed
         }
     }
 }

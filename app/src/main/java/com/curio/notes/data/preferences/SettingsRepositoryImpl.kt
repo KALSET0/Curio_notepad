@@ -22,6 +22,7 @@ private val WEB_SEARCH_KEY = booleanPreferencesKey("web_search")
 private val OLLAMA_URL_KEY = stringPreferencesKey("ollama_url")
 private val OLLAMA_MODEL_KEY = stringPreferencesKey("ollama_model")
 private val DEVELOPER_MODE_KEY = booleanPreferencesKey("developer_mode")
+private val SETUP_COMPLETED_KEY = booleanPreferencesKey("setup_completed")
 
 val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = SETTINGS_NAME)
 
@@ -88,5 +89,13 @@ class SettingsRepositoryImpl(
 
     override suspend fun setDeveloperMode(enabled: Boolean) {
         dataStore.edit { prefs -> prefs[DEVELOPER_MODE_KEY] = enabled }
+    }
+
+    override fun observeSetupComplete(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[SETUP_COMPLETED_KEY] ?: false
+    }
+
+    override suspend fun setSetupComplete(completed: Boolean) {
+        dataStore.edit { prefs -> prefs[SETUP_COMPLETED_KEY] = completed }
     }
 }

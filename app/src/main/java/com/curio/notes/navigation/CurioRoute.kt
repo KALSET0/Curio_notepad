@@ -7,6 +7,9 @@ sealed interface CurioRoute {
     data object Splash : CurioRoute
 
     @Serializable
+    data object Setup : CurioRoute
+
+    @Serializable
     data object Home : CurioRoute
 
     @Serializable

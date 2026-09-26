@@ -21,21 +21,26 @@ import kotlin.coroutines.resumeWithException
 
 class TavilyWebSearch(
     private val apiKey: String,
+    private val apiKeyOverride: () -> String = { "" },
     private val baseUrl: String = TavilyConfig.BASE_URL,
     private val client: OkHttpClient = GeminiAIProvider.defaultClient()
 ) : WebSearchProvider {
+
+    // User-entered key (Settings) wins; the build-time key is only the
+    // developer fallback. Read per call so a key change applies instantly.
+    private fun effectiveKey(): String = apiKeyOverride().ifBlank { apiKey }
 
     override suspend fun search(
         query: String,
         maxResults: Int,
         language: AiLanguage
     ): List<WebResult> {
-        if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        if (effectiveKey().isBlank()) throw AiException.MissingApiKey()
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return emptyList()
         val body = AiJson.encodeToString(
             TavilySearchRequest(
-                apiKey = apiKey,
+                apiKey = effectiveKey(),
                 query = trimmed,
                 maxResults = maxResults.coerceIn(1, 10)
             )

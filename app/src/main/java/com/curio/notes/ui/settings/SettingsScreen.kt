@@ -58,8 +58,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.domain.model.AiProviderChoice
+import com.curio.notes.domain.model.ApiKeyKind
 import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
+import com.curio.notes.ui.components.ApiKeyField
 import com.curio.notes.ui.components.CurioBackground
 import com.curio.notes.ui.components.ErrorText
 import com.curio.notes.ui.components.SectionHeader
@@ -76,10 +78,15 @@ fun SettingsScreen(
         viewModel(
             factory = SettingsViewModel.factory(
                 container.settingsRepository,
-                container.isGeminiConfigured,
-                container.isOpenRouterConfigured,
+                container.isGeminiConfigured(),
+                container.isOpenRouterConfigured(),
                 container.appVersion,
-                container.testOllamaConnection
+                container.testOllamaConnection,
+                container.apiKeyStorage::observeKey,
+                container.apiKeyStorage::setKey,
+                container.apiKeyStorage::clearKey,
+                container.validateGeminiKey,
+                container.validateOpenRouterKey
             )
         )
     }
@@ -92,6 +99,11 @@ fun SettingsScreen(
     val ollamaUrl by viewModel.ollamaUrl.collectAsStateWithLifecycle()
     val ollamaModel by viewModel.ollamaModel.collectAsStateWithLifecycle()
     val ollamaTest by viewModel.ollamaTest.collectAsStateWithLifecycle()
+    val geminiKey by viewModel.geminiKey.collectAsStateWithLifecycle()
+    val openRouterKey by viewModel.openRouterKey.collectAsStateWithLifecycle()
+    val tavilyKey by viewModel.tavilyKey.collectAsStateWithLifecycle()
+    val geminiTest by viewModel.geminiTest.collectAsStateWithLifecycle()
+    val openRouterTest by viewModel.openRouterTest.collectAsStateWithLifecycle()
 
     CurioBackground {
         Scaffold(
@@ -141,6 +153,14 @@ fun SettingsScreen(
                 onSelect = { viewModel.setAiProvider(AiProviderChoice.GEMINI) },
                 icon = Icons.Default.AutoAwesome
             )
+            ApiKeyField(
+                savedKey = geminiKey,
+                testState = geminiTest,
+                onSave = { viewModel.saveApiKey(ApiKeyKind.GEMINI, it) },
+                onClear = { viewModel.clearApiKey(ApiKeyKind.GEMINI) },
+                onTest = viewModel::testGeminiKey,
+                onTyped = { viewModel.resetKeyTest(ApiKeyKind.GEMINI) }
+            )
             RadioOption(
                 selected = provider == AiProviderChoice.OPENROUTER,
                 title = stringResource(R.string.provider_openrouter),
@@ -151,6 +171,14 @@ fun SettingsScreen(
                 },
                 onSelect = { viewModel.setAiProvider(AiProviderChoice.OPENROUTER) },
                 icon = Icons.Default.Cloud
+            )
+            ApiKeyField(
+                savedKey = openRouterKey,
+                testState = openRouterTest,
+                onSave = { viewModel.saveApiKey(ApiKeyKind.OPENROUTER, it) },
+                onClear = { viewModel.clearApiKey(ApiKeyKind.OPENROUTER) },
+                onTest = viewModel::testOpenRouterKey,
+                onTyped = { viewModel.resetKeyTest(ApiKeyKind.OPENROUTER) }
             )
             if (developerMode) {
                 RadioOption(
@@ -183,6 +211,11 @@ fun SettingsScreen(
                     modifier = Modifier.padding(vertical = Spacing.xs)
                 )
             }
+            Text(
+                text = stringResource(R.string.api_key_local_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             }
 
             SectionHeader(stringResource(R.string.section_appearance))
@@ -218,6 +251,14 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.websearch_sub),
                 onCheckedChange = viewModel::setWebSearchEnabled,
                 icon = Icons.Default.Public
+            )
+            ApiKeyField(
+                savedKey = tavilyKey,
+                testState = null,
+                onSave = { viewModel.saveApiKey(ApiKeyKind.TAVILY, it) },
+                onClear = { viewModel.clearApiKey(ApiKeyKind.TAVILY) },
+                onTest = null,
+                onTyped = {}
             )
             }
 

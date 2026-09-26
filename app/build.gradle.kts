@@ -25,6 +25,18 @@ val tavilyApiKey: String =
         .orEmpty()
         .replace("\"", "")
 
+// Release signing: keystore.properties (git-ignored, see
+// keystore.properties.example) wins when it points at an existing keystore.
+// Without it, release falls back to the debug key (internal testing only;
+// a public APK must always be signed with the real release keystore,
+// otherwise later updates with a different signature won't install).
+val keystoreProperties = Properties().also { props ->
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use(props::load)
+}
+val publicKeystoreFile = keystoreProperties.getProperty("storeFile")
+    ?.let { rootProject.file(it) }
+    ?.takeIf { it.exists() }
+
 android {
     namespace = "com.curio.notes"
     // AndroidX releases used here (Compose BOM 2026.09.00, core-ktx 1.19.1,
@@ -36,8 +48,8 @@ android {
         applicationId = "com.curio.notes"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "1.0.0"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
         buildConfigField("String", "OPENROUTER_API_KEY", "\"$openRouterApiKey\"")
         buildConfigField("String", "TAVILY_API_KEY", "\"$tavilyApiKey\"")
@@ -47,13 +59,22 @@ android {
         }
     }
 
+    signingConfigs {
+        if (publicKeystoreFile != null) {
+            create("pubRelease") {
+                storeFile = publicKeystoreFile
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Internal testing only: sign release with the debug key so the
-            // APK installs over debug builds (same signature, data kept) and
-            // animation fps can be judged without debuggable overhead.
-            // Play Store releases need a real keystore here instead.
-            signingConfig = signingConfigs.getByName("debug")
+            // Real keystore when configured, debug key otherwise (internal only).
+            signingConfig = publicKeystoreFile?.let { signingConfigs.getByName("pubRelease") }
+                ?: signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -84,6 +105,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.security.crypto)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp.okhttp)

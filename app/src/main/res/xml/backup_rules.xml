@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto-backup rules: notes (Room) and settings (DataStore) travel with
+     the user's Google backup so reinstalls keep data. The encrypted API-key
+     file is EXCLUDED: it is bound to this device's Keystore, so a restored
+     copy would be unreadable anyway — the user simply re-enters the key. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="curio_api_keys.xml" />
+</full-backup-content>

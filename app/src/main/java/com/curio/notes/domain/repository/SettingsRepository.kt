@@ -20,4 +20,8 @@ interface SettingsRepository {
     suspend fun setOllamaModel(model: String)
     fun observeDeveloperMode(): Flow<Boolean>
     suspend fun setDeveloperMode(enabled: Boolean)
+    // First-run AI setup shown once. Absent (fresh install) means show it;
+    // Skip and Save both mark it complete.
+    fun observeSetupComplete(): Flow<Boolean>
+    suspend fun setSetupComplete(completed: Boolean)
 }

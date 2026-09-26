@@ -3,6 +3,7 @@ package com.curio.notes.ai.providers
 import com.curio.notes.ai.AIProvider
 import com.curio.notes.ai.AIResponse
 import com.curio.notes.ai.AiException
+import com.curio.notes.ai.ApiKeyCheck
 import com.curio.notes.ai.AiJson
 import com.curio.notes.ai.AiLanguage
 import com.curio.notes.ai.ChatMessage
@@ -46,6 +47,7 @@ import kotlin.coroutines.resumeWithException
 
 class GeminiAIProvider(
     private val apiKey: String,
+    private val apiKeyOverride: () -> String = { "" },
     private val model: String = GeminiConfig.MODEL,
     private val baseUrl: String = GeminiConfig.BASE_URL,
     private val client: OkHttpClient = defaultClient(),
@@ -54,8 +56,12 @@ class GeminiAIProvider(
     private val webSearchEnabled: Flow<Boolean> = flowOf(false)
 ) : AIProvider {
 
+    // User-entered key (Settings/Setup) wins; the build-time key is only the
+    // developer fallback. Read per call so a key change applies instantly.
+    private fun effectiveKey(): String = apiKeyOverride().ifBlank { apiKey }
+
     override suspend fun classifyAndAnswer(input: String): AIResponse {
-        if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        if (effectiveKey().isBlank()) throw AiException.MissingApiKey()
         val aiLanguage = language.first().toAiLanguage()
         val sources = researchWithPrompt(
             CurioPrompts.gatekeeperPromptFor(input, aiLanguage),
@@ -97,7 +103,7 @@ class GeminiAIProvider(
         history: List<ChatMessage>,
         input: String
     ): String {
-        if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        if (effectiveKey().isBlank()) throw AiException.MissingApiKey()
         val aiLanguage = language.first().toAiLanguage()
         // The gatekeeper decides once, on the first turn. Later turns reuse
         // the grounded answer already present in history.
@@ -157,7 +163,7 @@ class GeminiAIProvider(
         context: ConversationContext,
         history: List<ChatMessage>
     ): List<String> {
-        if (apiKey.isBlank()) throw AiException.MissingApiKey()
+        if (effectiveKey().isBlank()) throw AiException.MissingApiKey()
         val aiLanguage = language.first().toAiLanguage()
         val body = AiJson.encodeToString(
             GeminiRequest(
@@ -215,7 +221,7 @@ class GeminiAIProvider(
     private suspend fun postText(body: String): String {
         val request = Request.Builder()
             .url("${baseUrl.trimEnd('/')}/models/$model:generateContent")
-            .header("x-goog-api-key", apiKey)
+            .header("x-goog-api-key", effectiveKey())
             .post(body.toRequestBody(JSON_MEDIA_TYPE))
             .build()
         return try {
@@ -324,6 +330,46 @@ class GeminiAIProvider(
                             continuation.resume(text)
                         }
                     }
+                }
+            })
+        }
+
+    // Lightweight key check for Settings/Setup: lists models and maps only
+    // what the UI distinguishes (accepted / rejected / unreachable).
+    suspend fun validateKey(key: String): ApiKeyCheck {
+        if (key.isBlank()) return ApiKeyCheck.INVALID
+        val request = Request.Builder()
+            .url("${baseUrl.trimEnd('/')}/models")
+            .header("x-goog-api-key", key)
+            .get()
+            .build()
+        val code = try {
+            statusOf(request)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return ApiKeyCheck.UNREACHABLE
+        }
+        return when (code) {
+            200 -> ApiKeyCheck.VALID
+            400, 401, 403 -> ApiKeyCheck.INVALID
+            else -> ApiKeyCheck.UNREACHABLE
+        }
+    }
+
+    private suspend fun statusOf(request: Request): Int =
+        suspendCancellableCoroutine { continuation ->
+            val call = client.newCall(request)
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    if (continuation.isCompleted) return
+                    continuation.resumeWithException(e)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (continuation.isCompleted) return
+                    response.use { res -> continuation.resume(res.code) }
                 }
             })
         }

@@ -47,6 +47,24 @@ It is a **curiosity inbox**.
 
 ---
 
+## 📲 Installation
+
+Download the latest APK from [GitHub Releases](https://github.com/KALSET0/Curio_notepad/releases/latest) and install it on your Android device.
+
+Android will warn that the app comes from outside Google Play — that is expected: Curio is distributed through GitHub rather than the Play Store. Allow “Install unknown apps” for your browser/files app once to proceed.
+
+Curio needs no account and no API key to install or open:
+
+1. Open Curio.
+2. Optionally choose **Gemini** or **OpenRouter** and enter your own API key — or skip and use the built-in Mock AI.
+3. Start capturing thoughts. Keys can be added, changed, or removed later in **Settings**.
+
+Your keys are stored encrypted only on your device, and your notes never leave the phone except for the AI requests you trigger.
+
+Found a bug? Report it in [Issues](https://github.com/KALSET0/Curio_notepad/issues).
+
+---
+
 ## ✨ Features
 
 ### Note Capture
@@ -170,7 +188,11 @@ OpenRouter is a real AI provider speaking the OpenAI-compatible chat API. The de
 
 ### API Keys
 
-Keys live in git-ignored `local.properties` (or environment variables) and are compiled into `BuildConfig`:
+Every user supplies their own keys — the distributed app contains none.
+
+In the app: first launch offers an optional AI setup (or skip it), and **Settings** permanently manages keys per provider — enter with show/hide, test the key, see a masked `..........A8F2` status, change or remove it anytime. Keys are encrypted on-device (Android Keystore) and excluded from auto-backup.
+
+For developers building from source, keys can also come from git-ignored `local.properties` (or environment variables) and are compiled into `BuildConfig` as a fallback:
 
 ```properties
 GEMINI_API_KEY=
@@ -178,7 +200,7 @@ OPENROUTER_API_KEY=   # free at https://openrouter.ai/keys
 TAVILY_API_KEY=       # free at https://tavily.com — only needed for web search
 ```
 
-Empty means unconfigured — the app keeps working with Mock AI, and selecting a keyless provider shows a friendly error on notes instead of crashing. Keys must never be committed to the repository.
+Empty means unconfigured — the app keeps working with Mock AI, and selecting a keyless provider explains how to configure it in Settings instead of crashing. Keys must never be committed to the repository.
 
 ### Local AI with Ollama (Developer options)
 
@@ -335,19 +357,13 @@ AI processing itself requires an external provider unless a local AI implementat
 
 ## 🔐 Privacy & Security
 
-This project is currently intended for personal use.
+Curio is local-first and needs no account, cloud sync, social features, payments, or backend.
 
-The application does not currently require:
-
-* User accounts
-* Cloud synchronization
-* Social features
-* Payments
-* A custom backend
+Notes live in the on-device database; settings sync with Android backup. API keys are encrypted with the device Keystore, never logged, never shown in full, and excluded from backups.
 
 API keys must never be stored directly in source code or committed to Git.
 
-Keys are configured via git-ignored `local.properties` (see `local.properties.example`):
+For developers, keys can come from git-ignored `local.properties` (see `local.properties.example`):
 
 ```properties
 GEMINI_API_KEY=
@@ -355,7 +371,7 @@ OPENROUTER_API_KEY=
 TAVILY_API_KEY=
 ```
 
-> **Important:** An API key included in a distributed Android application can potentially be extracted. The current architecture is acceptable for a personal application, but a public release would require a more secure API architecture.
+> **Important:** A user-supplied key inside a client-side Android application cannot be made unextractable the way a server-side secret can. Curio protects keys against accidental exposure (encrypted storage, no logs, masked UI, backup exclusion) — that is the honest security bar for a distributed client app.
 
 ---
 
@@ -376,8 +392,8 @@ Android Studio is recommended for configuring the Android environment, although 
 ### Clone the repository
 
 ```bash
-git clone <repository-url>
-cd curiosity-notes
+git clone https://github.com/KALSET0/Curio_notepad.git
+cd Curio_notepad
 ```
 
 ### Configure AI keys (optional)
@@ -485,6 +501,7 @@ The application should remain functional after every stage.
 * [x] Gemini provider
 * [x] OpenRouter provider
 * [x] Local API-key configuration
+* [x] In-app API key setup (Settings + first-run, encrypted on-device)
 * [x] Centralized AI prompt
 * [x] Search (type filters, sort, day groups, fast scroll)
 * [x] Settings (provider, theme)
@@ -534,7 +551,7 @@ The most important UX principle is:
 
 ## 🛠️ Development Status
 
-**Status: Personal Release — in daily use**
+**Status: Public Release 1.0.0 — distributed through GitHub Releases, in daily use**
 
 The MVP is complete and the app is used as a personal daily driver. New ideas go through the same lens: capture fast, keep the inbox calm, never lose a thought.
 

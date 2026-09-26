@@ -6,8 +6,8 @@ sealed class AiException(val code: String, message: String, cause: Throwable? = 
     IOException(message, cause) {
     class MissingApiKey : AiException(
         "missing_api_key",
-        "No Gemini API key is configured. " +
-            "Add GEMINI_API_KEY to local.properties (or the environment) and rebuild."
+        "No API key is configured for the selected provider. " +
+            "Add one in Settings."
     )
 
     class InvalidApiKey : AiException(
@@ -45,7 +45,7 @@ sealed class AiException(val code: String, message: String, cause: Throwable? = 
     class SearchFailed : AiException(
         "search_failed",
         "Web search is not available. " +
-            "Add TAVILY_API_KEY to local.properties (or the environment) and rebuild."
+            "Check the Tavily key in Settings."
     )
 
     // Local AI (Ollama): server URL missing. The laptop server must be
@@ -56,3 +56,8 @@ sealed class AiException(val code: String, message: String, cause: Throwable? = 
             "Set its URL in Settings → Developer options."
     )
 }
+
+// Result of an explicit "Test key" check from Settings/Setup. Tri-state on
+// purpose: the UI must never claim "valid" from a guess, and must tell a
+// rejected key apart from no connectivity.
+enum class ApiKeyCheck { VALID, INVALID, UNREACHABLE }

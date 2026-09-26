@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.curio.notes.BuildConfig
 import com.curio.notes.ai.AIProvider
+import com.curio.notes.ai.ApiKeyCheck
 import com.curio.notes.ai.GenerationTracker
 import com.curio.notes.ai.SwitchingAIProvider
 import com.curio.notes.ai.providers.GeminiAIProvider
@@ -18,6 +19,9 @@ import com.curio.notes.data.local.database.MIGRATION_3_4
 import com.curio.notes.data.local.database.MIGRATION_4_5
 import com.curio.notes.data.preferences.SettingsRepositoryImpl
 import com.curio.notes.data.preferences.settingsDataStore
+import com.curio.notes.data.security.ApiKeyStorage
+import com.curio.notes.domain.model.ApiKeyKind
+import com.curio.notes.domain.model.resolveApiKey
 import com.curio.notes.data.repository.NoteRepositoryImpl
 import com.curio.notes.domain.repository.NoteRepository
 import com.curio.notes.domain.repository.SettingsRepository
@@ -45,9 +49,18 @@ class AppContainer(context: Context) {
         SettingsRepositoryImpl(appContext.settingsDataStore)
     }
 
-    val isGeminiConfigured: Boolean = BuildConfig.GEMINI_API_KEY.isNotBlank()
+    val apiKeyStorage: ApiKeyStorage by lazy { ApiKeyStorage(appContext) }
 
-    val isOpenRouterConfigured: Boolean = BuildConfig.OPENROUTER_API_KEY.isNotBlank()
+    // A provider counts as configured when either a user key was saved
+    // (Settings/Setup) or the build carries a developer key. Evaluated per
+    // call so saving a key updates Settings without an app restart.
+    fun isGeminiConfigured(): Boolean = resolveApiKey(
+        apiKeyStorage.getKey(ApiKeyKind.GEMINI), BuildConfig.GEMINI_API_KEY
+    ).isNotBlank()
+
+    fun isOpenRouterConfigured(): Boolean = resolveApiKey(
+        apiKeyStorage.getKey(ApiKeyKind.OPENROUTER), BuildConfig.OPENROUTER_API_KEY
+    ).isNotBlank()
 
     val appVersion: String = BuildConfig.VERSION_NAME
 
@@ -58,13 +71,15 @@ class AppContainer(context: Context) {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // Routes every AI call to the provider chosen in Settings. Mock is the
-    // safe default; Gemini needs GEMINI_API_KEY in local.properties.
+    // safe default; cloud providers use the user-saved key first and the
+    // build-time key (local.properties) only as developer fallback.
     // Web search (Tavily) is opt-in per note/conversation turn: the providers
     // ask the gatekeeper first, and only search when it says so.
     // Ollama talks to the user's laptop on the local network (Developer options).
     private val tavilySearch: TavilyWebSearch by lazy {
         TavilyWebSearch(
             apiKey = BuildConfig.TAVILY_API_KEY,
+            apiKeyOverride = { apiKeyStorage.getKey(ApiKeyKind.TAVILY) },
             client = okHttpClient
         )
     }
@@ -84,6 +99,16 @@ class AppContainer(context: Context) {
         ollamaProvider.testConnection()
     }
 
+    // Key checks for Settings/Setup. Lightweight instances sharing the app
+    // OkHttp client; validateKey() only hits each provider's models endpoint.
+    val validateGeminiKey: suspend (String) -> ApiKeyCheck = { key ->
+        GeminiAIProvider(apiKey = "", client = okHttpClient).validateKey(key)
+    }
+
+    val validateOpenRouterKey: suspend (String) -> ApiKeyCheck = { key ->
+        OpenRouterAIProvider(apiKey = "", client = okHttpClient).validateKey(key)
+    }
+
     val aiProvider: AIProvider by lazy {
         val searchEnabled = settingsRepository.observeWebSearch()
         SwitchingAIProvider(
@@ -95,6 +120,7 @@ class AppContainer(context: Context) {
             ),
             gemini = GeminiAIProvider(
                 apiKey = BuildConfig.GEMINI_API_KEY,
+                apiKeyOverride = { apiKeyStorage.getKey(ApiKeyKind.GEMINI) },
                 client = okHttpClient,
                 language = settingsRepository.observeLanguage(),
                 webSearch = tavilySearch,
@@ -102,6 +128,7 @@ class AppContainer(context: Context) {
             ),
             openRouter = OpenRouterAIProvider(
                 apiKey = BuildConfig.OPENROUTER_API_KEY,
+                apiKeyOverride = { apiKeyStorage.getKey(ApiKeyKind.OPENROUTER) },
                 client = okHttpClient,
                 language = settingsRepository.observeLanguage(),
                 webSearch = tavilySearch,

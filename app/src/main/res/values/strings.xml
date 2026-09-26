@@ -86,15 +86,32 @@
     <string name="provider_gemini">Gemini</string>
     <string name="provider_gemini_ok">Real AI answers. API key configured.</string>
     <string name="provider_gemini_missing">Real AI answers. API key missing.</string>
-    <string name="provider_gemini_hint">Add GEMINI_API_KEY to local.properties (or the environment) and rebuild. Notes will show an error until then.</string>
+    <string name="provider_gemini_hint">Enter your Gemini API key below. Notes will show an error until then.</string>
     <string name="provider_openrouter">OpenRouter</string>
     <string name="provider_openrouter_ok">Real AI answers. API key configured.</string>
     <string name="provider_openrouter_missing">Real AI answers. API key missing.</string>
-    <string name="provider_openrouter_hint">Add OPENROUTER_API_KEY to local.properties (or the environment) and rebuild. Free keys at openrouter.ai/keys. Notes will show an error until then.</string>
+    <string name="provider_openrouter_hint">Enter your OpenRouter API key below. Free keys at openrouter.ai/keys. Notes will show an error until then.</string>
     <string name="provider_ollama">Local AI server</string>
     <string name="provider_ollama_ok">Local answers. Server: %1$s</string>
     <string name="provider_ollama_missing">Local answers. Server not set.</string>
     <string name="provider_ollama_hint">Set the server URL in Developer options below.</string>
+    <string name="api_key_label">API key</string>
+    <string name="api_key_enter">Enter API key</string>
+    <string name="api_key_show">Show key</string>
+    <string name="api_key_hide">Hide key</string>
+    <string name="api_key_clear">Clear</string>
+    <string name="api_key_test">Test</string>
+    <string name="api_key_testing">Testing…</string>
+    <string name="api_key_configured">Configured</string>
+    <string name="api_key_not_configured">Not configured</string>
+    <string name="api_key_valid">Key accepted</string>
+    <string name="api_key_invalid">Key rejected — check it and try again</string>
+    <string name="api_key_unreachable">Couldn\'t reach the provider — check your connection</string>
+    <string name="api_key_local_note">Keys are stored only on this device.</string>
+    <string name="setup_title">Welcome to Curio</string>
+    <string name="setup_body">Curio can use AI to analyze your notes. Choose a provider, or skip for now — you can configure it later in Settings.</string>
+    <string name="setup_skip">Skip for now</string>
+    <string name="setup_continue">Continue</string>
     <string name="section_developer">Developer options</string>
     <string name="dev_mode_title">Developer mode</string>
     <string name="dev_mode_sub">Shows the local AI server and experimental settings.</string>
@@ -151,7 +168,7 @@
     <string name="type_other">Other</string>
 
     <!-- Errors -->
-    <string name="error_missing_api_key">No API key is configured for the selected AI provider. Add it to local.properties (or the environment) and rebuild.</string>
+    <string name="error_missing_api_key">No API key is configured for the selected AI provider. Add one in Settings.</string>
     <string name="error_invalid_api_key">The API key was rejected. Check the key for the selected provider and try again.</string>
     <string name="error_network">No connection to the AI service. Your note is saved — retry when you\'re back online.</string>
     <string name="error_timed_out">The AI took too long to respond. Your note is saved — try again.</string>
@@ -164,7 +181,7 @@
     <string name="error_delete_failed">Couldn\'t delete this note. Try again.</string>
     <string name="error_update_failed">Couldn\'t update the selected notes. Try again.</string>
     <string name="error_conversation_failed">Couldn\'t continue the conversation. Your notes are safe — retry to try again.</string>
-    <string name="error_search_failed">The AI couldn\'t search the web. Check TAVILY_API_KEY in local.properties (or the environment) and rebuild.</string>
+    <string name="error_search_failed">The AI couldn\'t search the web. Check the Tavily key in Settings.</string>
     <string name="error_ollama_not_configured">The local AI server isn\'t configured. Set its URL in Settings → Developer options.</string>
     <string name="cd_copy">Copy</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
