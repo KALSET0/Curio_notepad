@@ -149,6 +149,29 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `setArchived moves single note both ways`() = runTest {
+        val repository = FakeNoteRepository()
+        val first = repository.createNote("A", "a")
+        repository.createNote("B", "b")
+        val viewModel = HomeViewModel(repository)
+        backgroundScope.launch { viewModel.notes.collect {} }
+        backgroundScope.launch { viewModel.archivedNotes.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setArchived(first, true)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.notes.value.size)
+        assertEquals(listOf(first), viewModel.archivedNotes.value.map { it.id })
+
+        viewModel.setArchived(first, false)
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.notes.value.size)
+        assertTrue(viewModel.archivedNotes.value.isEmpty())
+    }
+
+    @Test
     fun `pinSelected pins note to top`() = runTest {
         val repository = FakeNoteRepository()
         val first = repository.createNote("A", "a")
