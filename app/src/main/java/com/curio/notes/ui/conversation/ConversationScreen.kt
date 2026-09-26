@@ -56,6 +56,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -83,6 +84,7 @@ import com.curio.notes.ai.ChatRole
 import com.curio.notes.ai.formatGenerationDuration
 import com.curio.notes.domain.model.Note
 import com.curio.notes.ui.components.ErrorText
+import com.curio.notes.ui.components.CurioBackground
 import com.curio.notes.ui.components.CurioThinkingIndicator
 import com.curio.notes.ui.components.MarkdownText
 import com.curio.notes.ui.components.ShareButton
@@ -152,12 +154,17 @@ fun ConversationScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = note?.let { stringResource(R.string.session_title, it.title) }
+    CurioBackground {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    ),
+                    title = {
+                        Text(
+                            text = note?.let { stringResource(R.string.session_title, it.title) }
                             ?: stringResource(R.string.continue_ai),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -474,6 +481,7 @@ fun ConversationScreen(
                 }
             }
         }
+    }
     }
 }
 

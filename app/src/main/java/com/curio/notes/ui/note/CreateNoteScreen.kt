@@ -23,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -43,9 +45,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.ui.components.CopyIconButton
+import com.curio.notes.ui.components.CurioBackground
 import com.curio.notes.ui.components.CurioPrimaryButton
 import com.curio.notes.ui.components.ErrorText
 import com.curio.notes.ui.components.borderlessFieldColors
+import com.curio.notes.ui.theme.Spacing
 import com.curio.notes.ui.util.errorMessageFor
 import com.curio.notes.ui.util.rememberAppContainer
 
@@ -86,10 +90,15 @@ fun CreateNoteScreen(
         keyboard?.show()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.create_title)) },
+    CurioBackground {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    ),
+                    title = { Text(stringResource(R.string.create_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -106,7 +115,7 @@ fun CreateNoteScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .imePadding()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Spacing.lg)
         ) {
             // The blank title folds away only once there is thought text to
             // focus on, so the title stays reachable until you start typing.
@@ -155,7 +164,7 @@ fun CreateNoteScreen(
             saveError?.let { code ->
                 ErrorText(
                     text = errorMessageFor(code),
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = Spacing.xs)
                 )
             }
             if (developerMode) {
@@ -178,5 +187,6 @@ fun CreateNoteScreen(
                 enabled = body.isNotBlank() && !saving
             )
         }
+    }
     }
 }
