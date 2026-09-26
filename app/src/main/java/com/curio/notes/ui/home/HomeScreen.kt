@@ -2,9 +2,7 @@ package com.curio.notes.ui.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -34,12 +32,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,7 +43,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -289,45 +283,19 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(visibleNotes, key = { it.id }) { note ->
-                        if (selectionMode) {
-                            NoteCard(
-                                note = note,
-                                selected = note.id in selectedIds,
-                                modifier = Modifier.animateItem(),
-                                onClick = { viewModel.toggleSelection(note.id) },
-                                onLongClick = { viewModel.enterSelection(note.id) }
-                            )
-                        } else {
-                            val dismissState = rememberSwipeToDismissBoxState(
-                                confirmValueChange = { value ->
-                                    if (value == SwipeToDismissBoxValue.StartToEnd ||
-                                        value == SwipeToDismissBoxValue.EndToStart
-                                    ) {
-                                        viewModel.setArchived(note.id, !showArchived)
-                                        true
-                                    } else {
-                                        false
-                                    }
+                        NoteCard(
+                            note = note,
+                            selected = note.id in selectedIds,
+                            modifier = Modifier.animateItem(),
+                            onClick = {
+                                if (selectionMode) {
+                                    viewModel.toggleSelection(note.id)
+                                } else {
+                                    onOpenNote(note.id)
                                 }
-                            )
-                            SwipeToDismissBox(
-                                state = dismissState,
-                                backgroundContent = {
-                                    ArchiveDismissBackground(
-                                        unarchive = showArchived,
-                                        direction = dismissState.dismissDirection
-                                    )
-                                },
-                                modifier = Modifier.animateItem()
-                            ) {
-                                NoteCard(
-                                    note = note,
-                                    selected = false,
-                                    onClick = { onOpenNote(note.id) },
-                                    onLongClick = { viewModel.enterSelection(note.id) }
-                                )
-                            }
-                        }
+                            },
+                            onLongClick = { viewModel.enterSelection(note.id) }
+                        )
                     }
                 }
             }
@@ -343,45 +311,6 @@ fun HomeScreen(
                 showDeleteDialog = false
                 viewModel.deleteSelected {}
             }
-        )
-    }
-}
-
-// Swipe backdrop: archive color + icon on the swiped side, same action
-// both directions (inbox -> archive, archive -> inbox).
-@Composable
-private fun ArchiveDismissBackground(
-    unarchive: Boolean,
-    direction: SwipeToDismissBoxValue,
-    modifier: Modifier = Modifier
-) {
-    val alignment = when (direction) {
-        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-        SwipeToDismissBoxValue.Settled -> Alignment.Center
-    }
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .clip(MaterialTheme.shapes.small)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(horizontal = 20.dp),
-        contentAlignment = alignment
-    ) {
-        Icon(
-            if (unarchive) {
-                Icons.Default.Unarchive
-            } else {
-                Icons.Default.Archive
-            },
-            contentDescription = stringResource(
-                if (unarchive) {
-                    R.string.action_unarchive
-                } else {
-                    R.string.action_archive
-                }
-            ),
-            tint = MaterialTheme.colorScheme.onPrimaryContainer
         )
     }
 }

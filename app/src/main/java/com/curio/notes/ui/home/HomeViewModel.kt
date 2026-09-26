@@ -67,19 +67,6 @@ class HomeViewModel(private val repository: NoteRepository) : ViewModel() {
         bulkUpdate(action = { repository.setArchived(it, false) })
     }
 
-    // Single-note swipe action from the inbox list. Errors surface through
-    // the same selectionError channel the bulk actions use.
-    fun setArchived(noteId: Long, archived: Boolean) {
-        viewModelScope.launch {
-            try {
-                repository.setArchived(setOf(noteId), archived)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                _selectionError.value = "update_failed"
-            }
-        }
-    }
-
     fun pinSelected() {
         bulkUpdate(action = { repository.setPinned(it, true) })
     }
