@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -28,7 +29,6 @@ import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,8 +36,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +47,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -57,8 +60,11 @@ import com.curio.notes.R
 import com.curio.notes.domain.model.AiProviderChoice
 import com.curio.notes.domain.model.AppLanguage
 import com.curio.notes.domain.model.AppTheme
+import com.curio.notes.ui.components.CurioBackground
 import com.curio.notes.ui.components.ErrorText
 import com.curio.notes.ui.components.SectionHeader
+import com.curio.notes.ui.components.SettingsCard
+import com.curio.notes.ui.theme.Spacing
 import com.curio.notes.ui.util.rememberAppContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,10 +93,15 @@ fun SettingsScreen(
     val ollamaModel by viewModel.ollamaModel.collectAsStateWithLifecycle()
     val ollamaTest by viewModel.ollamaTest.collectAsStateWithLifecycle()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.cd_settings)) },
+    CurioBackground {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    ),
+                    title = { Text(stringResource(R.string.cd_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -107,10 +118,11 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs)
         ) {
             SectionHeader(stringResource(R.string.section_provider))
+            SettingsCard {
             RadioOption(
                 selected = provider == AiProviderChoice.MOCK,
                 title = stringResource(R.string.provider_mock),
@@ -156,23 +168,25 @@ fun SettingsScreen(
             if (provider == AiProviderChoice.GEMINI && !viewModel.isGeminiConfigured) {
                 ErrorText(
                     text = stringResource(R.string.provider_gemini_hint),
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    modifier = Modifier.padding(vertical = Spacing.xs)
                 )
             }
             if (provider == AiProviderChoice.OPENROUTER && !viewModel.isOpenRouterConfigured) {
                 ErrorText(
                     text = stringResource(R.string.provider_openrouter_hint),
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    modifier = Modifier.padding(vertical = Spacing.xs)
                 )
             }
             if (developerMode && provider == AiProviderChoice.OLLAMA && ollamaUrl.isBlank()) {
                 ErrorText(
                     text = stringResource(R.string.provider_ollama_hint),
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    modifier = Modifier.padding(vertical = Spacing.xs)
                 )
+            }
             }
 
             SectionHeader(stringResource(R.string.section_appearance))
+            SettingsCard {
             RadioOption(
                 selected = theme == AppTheme.SYSTEM,
                 title = stringResource(R.string.theme_system),
@@ -194,10 +208,10 @@ fun SettingsScreen(
                 onSelect = { viewModel.setTheme(AppTheme.DARK) },
                 icon = Icons.Default.DarkMode
             )
-
-            SettingsDivider()
+            }
 
             SectionHeader(stringResource(R.string.section_websearch))
+            SettingsCard {
             SwitchOption(
                 checked = webSearchEnabled,
                 title = stringResource(R.string.websearch_title),
@@ -205,10 +219,10 @@ fun SettingsScreen(
                 onCheckedChange = viewModel::setWebSearchEnabled,
                 icon = Icons.Default.Public
             )
-
-            SettingsDivider()
+            }
 
             SectionHeader(stringResource(R.string.section_language))
+            SettingsCard {
             RadioOption(
                 selected = language == AppLanguage.SYSTEM,
                 title = stringResource(R.string.lang_system),
@@ -230,10 +244,10 @@ fun SettingsScreen(
                 onSelect = { viewModel.setLanguage(AppLanguage.SPANISH) },
                 icon = Icons.Default.Translate
             )
-
-            SettingsDivider()
+            }
 
             if (developerMode) {
+                SettingsCard {
                 DeveloperOptions(
                     ollamaUrl = ollamaUrl,
                     ollamaModel = ollamaModel,
@@ -243,14 +257,15 @@ fun SettingsScreen(
                     onTest = viewModel::testOllama,
                     onDeveloperModeChange = viewModel::setDeveloperMode
                 )
+                }
 
-                SettingsDivider()
             }
 
             SectionHeader(stringResource(R.string.section_about))
+            SettingsCard {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
             ) {
                 Image(
                     painter = painterResource(R.drawable.curio_logo),
@@ -274,18 +289,12 @@ fun SettingsScreen(
                 text = stringResource(R.string.about_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = Spacing.xs)
             )
+            }
         }
     }
-}
-
-@Composable
-private fun SettingsDivider(modifier: Modifier = Modifier) {
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-        modifier = modifier.padding(vertical = 4.dp)
-    )
+    }
 }
 
 @Composable
@@ -405,7 +414,7 @@ private fun RadioOption(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onSelect)
-            .padding(vertical = 8.dp),
+            .padding(vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -439,7 +448,7 @@ private fun SwitchOption(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = { onCheckedChange(!checked) })
-            .padding(vertical = 8.dp),
+            .padding(vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {

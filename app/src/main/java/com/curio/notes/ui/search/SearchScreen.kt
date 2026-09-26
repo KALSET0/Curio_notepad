@@ -1,5 +1,6 @@
 package com.curio.notes.ui.search
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -18,11 +20,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,16 +35,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.notes.R
 import com.curio.notes.domain.model.NoteSortOrder
 import com.curio.notes.domain.model.NoteType
+import com.curio.notes.ui.components.CurioBackground
 import com.curio.notes.ui.components.EmptyState
 import com.curio.notes.ui.components.NoteCard
 import com.curio.notes.ui.components.SectionHeader
+import com.curio.notes.ui.components.borderlessFieldColors
 import com.curio.notes.ui.theme.Spacing
 import com.curio.notes.ui.util.appLocale
 import com.curio.notes.ui.util.label
@@ -74,10 +83,15 @@ fun SearchScreen(
         keyboard?.show()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.search_title)) },
+    CurioBackground {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    ),
+                    title = { Text(stringResource(R.string.search_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -96,31 +110,39 @@ fun SearchScreen(
                 .padding(Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = viewModel::onQueryChange,
-                label = { Text(stringResource(R.string.search_label)) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null
-                    )
-                },
-                singleLine = true,
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = viewModel::clearQuery) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = stringResource(R.string.cd_clear_search)
-                            )
+            Surface(
+                tonalElevation = 2.dp,
+                shape = RoundedCornerShape(28.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextField(
+                    value = query,
+                    onValueChange = viewModel::onQueryChange,
+                    placeholder = { Text(stringResource(R.string.search_label)) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null
+                        )
+                    },
+                    singleLine = true,
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = viewModel::clearQuery) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.cd_clear_search)
+                                )
+                            }
                         }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester)
-            )
+                    },
+                    colors = borderlessFieldColors(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester)
+                )
+            }
             // Sort on its own row; type filters scroll below it.
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 FilterChip(
@@ -187,6 +209,7 @@ fun SearchScreen(
                 }
             }
         }
+    }
     }
 }
 
